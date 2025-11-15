@@ -9,6 +9,9 @@ from flask import Flask, jsonify, request
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from llm import VRContextWorkflow
 
 # Load environment variables
 load_dotenv()
@@ -90,6 +93,14 @@ def create_app():
     # Set up JSON logging
     setup_logging(app)
     
+    # Initialize VRContextWorkflow
+    if Config.GEMINI_API_KEY:
+        app.workflow = VRContextWorkflow(api_key=Config.GEMINI_API_KEY)
+        app.logger.info('VRContextWorkflow initialized')
+    else:
+        app.logger.warning('GEMINI_API_KEY not set, workflow not initialized')
+        app.workflow = None
+    
     # Register error handlers
     register_error_handlers(app)
     
@@ -166,6 +177,10 @@ def register_error_handlers(app):
 def register_routes(app):
     """Register application routes."""
     
+    # Import and register assist route
+    from app.routes.assist import register_assist_route
+    register_assist_route(app)
+    
     @app.route('/health', methods=['GET'])
     def health():
         """
@@ -178,7 +193,7 @@ def register_routes(app):
                 raise ValueError("GEMINI_API_KEY not configured")
             
             llm = ChatGoogleGenerativeAI(
-                model="gemini-1.5-flash",
+                model="gemini-2.5-flash",
                 google_api_key=Config.GEMINI_API_KEY,
                 temperature=0
             )
