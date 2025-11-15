@@ -1,0 +1,104 @@
+{
+  "Nodes": [
+    {
+      "Id": "b05274d0-7338-4384-9dd4-80b0917a0b1f",
+      "Name": "HapticInput",
+      "NumHistory": 100,
+      "Type": "HapticData",
+      "SubType": "None",
+      "Config": {
+        "$type": "hapticdata",
+        "Name": "HapticInput"
+      }
+    },
+    {
+      "Id": "7b7a29b6-16a3-48fb-9b5b-6a5bd03d886a",
+      "Name": "Burst",
+      "NumHistory": 100,
+      "Type": "Train",
+      "SubType": "AfferenceRingBurstTrain",
+      "Config": {
+        "$type": "afferenceBurstTrainNode",
+        "Name": "Burst",
+        "BurstDef": "[(,)]",
+        "ResolveFlag": "PA",
+        "UseBounder": true,
+        "TrainType": "Burst"
+      }
+    },
+    {
+      "Id": "670fc28e-53b2-4984-8d26-821247fa40fd",
+      "Name": "PA",
+      "NumHistory": 100,
+      "Type": "Transform",
+      "SubType": "ConstantTransform",
+      "Config": {
+        "$type": "constTransform",
+        "Name": "PA",
+        "Constant": 6
+      }
+    },
+    {
+      "Id": "1f760ce1-5d01-4237-9bc3-4cb276266813",
+      "Name": "PW",
+      "NumHistory": 100,
+      "Type": "Transform",
+      "SubType": "ConstantTransform",
+      "Config": {
+        "$type": "constTransform",
+        "Name": "PW",
+        "Constant": 250
+      }
+    },
+    {
+      "Id": "55e4b3a5-9542-44ef-8435-ed1724e7342d",
+      "Name": "Waveform",
+      "NumHistory": 100,
+      "Type": "Transform",
+      "SubType": "ConstantTransform",
+      "Config": {
+        "$type": "constTransform",
+        "Name": "Waveform",
+        "Constant": 2
+      }
+    },
+    {
+      "Id": "605444d1-9a80-41b6-a2a4-6e27b456983a",
+      "Name": "Volume",
+      "NumHistory": 100,
+      "Type": "Transform",
+      "SubType": "ConstantTransform",
+      "Config": {
+        "$type": "constTransform",
+        "Name": "Volume",
+        "Constant": 5
+      }
+    }
+  ],
+  "Edges": [
+    {
+      "FromId": "670fc28e-53b2-4984-8d26-821247fa40fd",
+      "ToId": "7b7a29b6-16a3-48fb-9b5b-6a5bd03d886a",
+      "Port": "PA",
+      "Weight": 1
+    },
+    {
+      "FromId": "1f760ce1-5d01-4237-9bc3-4cb276266813",
+      "ToId": "7b7a29b6-16a3-48fb-9b5b-6a5bd03d886a",
+      "Port": "PW",
+      "Weight": 1
+    },
+    {
+      "FromId": "55e4b3a5-9542-44ef-8435-ed1724e7342d",
+      "ToId": "7b7a29b6-16a3-48fb-9b5b-6a5bd03d886a",
+      "Port": "Waveform",
+      "Weight": 1
+    },
+    {
+      "FromId": "605444d1-9a80-41b6-a2a4-6e27b456983a",
+      "ToId": "7b7a29b6-16a3-48fb-9b5b-6a5bd03d886a",
+      "Port": "Vol",
+      "Weight": 1
+    }
+  ]
+}

@@ -97,3 +97,10 @@ InitTestScene*.unity*
 
 # Auto-generated scenes by play mode tests
 /[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
+
+# Build outputs
+*.apk
+*.aab
+
+# Internal build temporal file (especially in Unity 6+)
+*.utmp

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.yourcompany.yourapp">
+
+  <!-- Device capability -->
+  <uses-feature android:name="android.hardware.bluetooth_le" android:required="true" />
+
+  <!-- Android 12+ BLE runtime permissions -->
+  <uses-permission android:name="android.permission.BLUETOOTH_SCAN"
+                   android:usesPermissionFlags="neverForLocation" />
+  <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+  <!-- For API < 31 scanning -->
+  <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+  <!-- Only if you actually advertise -->
+  <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
+
+  <application>
+    <!-- Exactly one launcher activity: GameActivity -->
+    <activity
+        android:name="com.unity3d.player.UnityPlayerGameActivity"
+        android:exported="true"
+        android:theme="@style/BaseUnityGameActivityTheme"
+        tools:node="replace"
+        tools:replace="android:exported,android:theme">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+      <meta-data android:name="unityplayer.UnityActivity" android:value="true" />
+      <meta-data android:name="android.app.lib_name" android:value="game" />
+    </activity>
+
+    <!-- If you still get duplicate WindowManagerPreference meta-data, uncomment these: -->
+    <!--
+    <meta-data android:name="WindowManagerPreference:FreeformWindowSize" tools:node="remove"/>
+    <meta-data android:name="WindowManagerPreference:FreeformWindowOrientation" tools:node="remove"/>
+    -->
+  </application>
+</manifest>

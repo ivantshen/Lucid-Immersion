@@ -1,0 +1,12 @@
+<linker>
+  <assembly fullname="AfferenceEngine" preserve="all" />
+  <assembly fullname="log4net">
+    <type fullname="log4net.Repository.Hierarchy.Hierarchy" preserve="all"/>
+    <type fullname="log4net.Repository.Hierarchy.Logger" preserve="all"/>
+    <type fullname="log4net.Repository.Hierarchy.RootLogger" preserve="all"/>
+    <type fullname="log4net.Repository.*" preserve="all"/>
+    <type fullname="log4net.Appender.*" preserve="all"/>
+    <type fullname="log4net.Layout.*" preserve="all"/>
+    <type fullname="log4net.Core.*" preserve="all"/>
+  </assembly>
+</linker>

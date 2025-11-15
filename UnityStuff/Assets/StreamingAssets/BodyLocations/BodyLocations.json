@@ -1,0 +1,116 @@
+﻿{
+	"body_locs": [
+		{
+			"loc_def": {
+				"name": "D1",
+				"description": "Thumb"
+			}
+		},
+		{
+			"loc_def": {
+				"name": "D2",
+				"description": "Index Finger"
+			}
+		},
+		{
+			"loc_def": {
+				"name": "D3",
+				"description": "Middle Finger"
+			}
+		},
+		{
+			"loc_def": {
+				"name": "D4",
+				"description": "Ring Finger"
+			}
+		},
+		{
+			"loc_def": {
+				"name": "D5",
+				"description": "Pinky"
+			}
+		}
+	],
+
+	"body_locsmodifiers": [
+		{
+			"mod_def": {
+				"name": "medial",
+				"modDescr": "Towards center of body"
+			}
+		},
+		{
+			"mod_def": {
+				"name": "medio-central",
+				"modDescr": "Medial of middle of body part"
+			}
+		},
+		{
+			"mod_def": {
+				"name": "latero-central",
+				"modDescr": "Lateral of middle of body part"
+			}
+		},
+		{
+			"mod_def": {
+				"name": "lateral",
+				"modDescr": "Outside of body"
+			}
+		},
+		{
+			"mod_def": {
+				"name": "proximal",
+				"modDescr": "Closer to the spine"
+			}
+		},
+		{
+			"mod_def": {
+				"name": "distal",
+				"modDescr": "Away from the spine"
+			}
+		},
+		{
+			"mod_def": {
+				"name": "ventral",
+				"modDescr": "Stomach side"
+			}
+		},
+		{
+			"mod_def": {
+				"name": "dorsal",
+				"modDescr": "Back side"
+			}
+		},
+		{
+			"mod_def": {
+				"name": "angle_0",
+				"modDescr": "The default base angle position in a circular or other annular system"
+			}
+		},
+		{
+			"mod_def": {
+				"name": "angle_90",
+				"modDescr": "An angle 1/4 turn CW from the base angle position in a circular or other annular system"
+			}
+		},
+		{
+			"mod_def": {
+				"name": "angle_180",
+				"modDescr": "The postion opposite of the base angle position in a circular or other annular system"
+			}
+		},
+		{
+			"mod_def": {
+				"name": "angle_270",
+				"modDescr": "The position 3/4 turn CW or 1/4 turn CCW from default base angle position in a circular or other annular system"
+			}
+		},
+		{
+			"mod_def": {
+				"name": "angle_",
+				"modDescr": "A position at an arbitrary angle from default base angle position in a circular or other annular system. The angle is to be appended following the underscore"
+			}
+		}
+	]
+}
+
