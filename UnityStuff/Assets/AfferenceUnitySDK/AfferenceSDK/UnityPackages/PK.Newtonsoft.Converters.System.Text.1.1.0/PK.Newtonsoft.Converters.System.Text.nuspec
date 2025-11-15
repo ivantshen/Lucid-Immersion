@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>PK.Newtonsoft.Converters.System.Text</id>
+    <version>1.1.0</version>
+    <title>Convert objects between System.Text.Json and Newtonsoft.Json</title>
+    <authors>CEPOCTb</authors>
+    <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
+    <projectUrl>https://github.com/CEPOCTb/Utils</projectUrl>
+    <description>A set of converters to convert objects between System.Text.Json JsonDocument, JsonElement, JsonNode and Newtonsoft.Json JObject, JArray, JValue</description>
+    <copyright>Copyright © CEPOCTb 2024</copyright>
+    <tags>json newtonsoft systemtextjson</tags>
+    <repository type="Git" url="https://github.com/CEPOCTb/Utils" commit="87bc784415e81418c668e4ef81a61f5ee9295a61" />
+    <dependencies>
+      <group targetFramework=".NETCoreApp3.1">
+        <dependency id="Newtonsoft.Json" version="13.0.3" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="net5.0">
+        <dependency id="Newtonsoft.Json" version="13.0.3" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="net6.0">
+        <dependency id="Newtonsoft.Json" version="13.0.3" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="net7.0">
+        <dependency id="Newtonsoft.Json" version="13.0.3" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="net8.0">
+        <dependency id="Newtonsoft.Json" version="13.0.3" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+</package>

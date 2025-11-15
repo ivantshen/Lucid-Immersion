@@ -1,0 +1,85 @@
+{
+  "UserDataVersion": {
+    "Major": 0,
+    "Minor": 2,
+    "Patch": 0
+  },
+  "Name": {
+    "First": "User",
+    "Middle": "",
+    "Last": "Example"
+  },
+  "Address": {
+    "Street": "123 Some Rd",
+    "City": "Anywhere",
+    "State": "OH",
+    "zipcode": "12345",
+    "Country": "USA"
+  },
+  "ID": "51507bda-7269-4c39-9b82-97ab23061f46",
+  "UserVolume": 0.0,
+  "ProductData": {
+    "AfferenceRing": {
+      "SerialNumber": "",
+      "locationParamManager": {
+        "D2,lateral,": {
+          "CalibrationData": {},
+          "Sensitivity": 0.22,
+          "PsycExp": 1.0,
+          "MidPoint": 0.5,
+          "Balance": 0.0
+        },
+        "D2,medial,": {
+          "CalibrationData": {
+            "Sine": {
+              "WaveformType": "Sine",
+              "FrequencyData": {
+                "3": {
+                  "Frequency": 3.0,
+                  "P0": {
+                    "PA": 1.7,
+                    "Rh": 1.7,
+                    "PW": 250.0,
+                    "Ch": 250.0,
+                    "Mag": 250.00577993318475
+                  },
+                  "P1": {
+                    "PA": 2.8,
+                    "Rh": 2.8,
+                    "PW": 250.0,
+                    "Ch": 250.0,
+                    "Mag": 250.01567950830602
+                  },
+                  "P2": {
+                    "PA": 9.0,
+                    "Rh": 9.0,
+                    "PW": 24.0,
+                    "Ch": 24.0,
+                    "Mag": 25.632011235952593
+                  },
+                  "P3": {
+                    "PA": 9.0,
+                    "Rh": 9.0,
+                    "PW": 56.0,
+                    "Ch": 56.0,
+                    "Mag": 56.718603649948932
+                  },
+                  "Pw_H": 250.0,
+                  "Pa_H": 9.0,
+                  "Pw_L_Thresh": 24.0,
+                  "Pw_L_Max": 56.0,
+                  "Pa_L_Thresh": 1.7,
+                  "Pa_L_Max": 2.8
+                }
+              }
+            }
+          },
+          "Sensitivity": 0.22,
+          "PsycExp": 1.0,
+          "MidPoint": 0.5,
+          "Balance": 0.0
+        }
+      }
+    }
+  }
+}
