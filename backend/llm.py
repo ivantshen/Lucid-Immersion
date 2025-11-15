@@ -3,7 +3,6 @@ from datetime import datetime
 from typing import TypedDict, List, Optional, Annotated
 import operator
 from langgraph.graph import StateGraph, MessagesState, START, END
-from langchain_anthropic import ChatAnthropic
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 
@@ -14,8 +13,8 @@ class VRContextState(TypedDict):
 
     # Image analysis
     scene_description: Optional[str]
-    detected_objects: Optional
-    user_action: Optional
+    detected_objects: Optional[list]
+    user_action: Optional[str]
 
     context_history: Annotated[List[dict], operator.add] # Accumulate context over time
 
@@ -234,9 +233,9 @@ if __name__ == "__main__":
     import os
     
     # Initialize workflow
-    api_key = os.getenv("ANTHROPIC_API_KEY")
+    api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
-        print("Please set ANTHROPIC_API_KEY environment variable")
+        print("Please set GEMINI_API_KEY environment variable")
         exit(1)
     
     workflow = VRContextWorkflow(api_key)
