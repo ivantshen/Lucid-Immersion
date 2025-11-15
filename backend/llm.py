@@ -43,7 +43,7 @@ class VRContextWorkflow:
             temperature=0.2
         )
         self.max_context_history = max_context_history
-        self.workflow = self.build_workflow()
+        self.workflow = self._build_workflow()
 
     def _build_workflow(self) -> StateGraph:
         """Build the LangGraph workflow"""
