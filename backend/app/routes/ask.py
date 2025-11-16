@@ -42,6 +42,13 @@ def register_ask_route(app):
         session_id = None
         
         try:
+            # Log ALL request details at the very start
+            app.logger.info(f'=== /ask Request Debug ===')
+            app.logger.info(f'Content-Type: {request.content_type}')
+            app.logger.info(f'Content-Length: {request.content_length}')
+            app.logger.info(f'Method: {request.method}')
+            app.logger.info(f'Headers: {dict(request.headers)}')
+            
             # 1. Authenticate request
             auth_header = request.headers.get('Authorization', '')
             if not auth_header.startswith('Bearer '):
@@ -51,79 +58,73 @@ def register_ask_route(app):
             if api_key != app.config['API_KEY']:
                 raise Unauthorized('Invalid API key')
             
-            # 2. Parse request data (JSON or multipart/form-data)
+            # 2. Parse request data
+            # Try form data first (like /assist endpoint does)
             question = None
             is_voice_input = False
             
-            # Log request details for debugging
-            app.logger.info(f'Incoming request - Content-Type: {request.content_type}, Method: {request.method}')
+            # Check if audio file is provided in multipart data
+            if 'audio' in request.files:
+                # Multipart request with audio
+                app.logger.info('Processing multipart request with audio')
+                session_id = request.form.get('session_id')
+                audio_file = request.files['audio']
+                
+                # Validate audio file
+                is_valid, error_msg = validate_audio(audio_file)
+                if not is_valid:
+                    if 'too large' in error_msg.lower():
+                        raise RequestEntityTooLarge(error_msg)
+                    else:
+                        raise BadRequest(error_msg)
+                
+                # Read audio bytes
+                audio_bytes = audio_file.read()
+                audio_file.seek(0)
+                
+                # Save audio file for debugging
+                try:
+                    debug_dir = 'test_images'
+                    os.makedirs(debug_dir, exist_ok=True)
+                    timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+                    debug_filename = f"{debug_dir}/audio_{session_id}_{timestamp}.wav"
+                    with open(debug_filename, 'wb') as f:
+                        f.write(audio_bytes)
+                    app.logger.info(f'Saved audio file to {debug_filename}')
+                except Exception as e:
+                    app.logger.warning(f'Failed to save debug audio: {e}')
+                
+                # Transcribe audio to text
+                app.logger.info(f'Transcribing audio for session {session_id}')
+                success, transcribed_text, error_msg = transcribe_audio(
+                    audio_bytes,
+                    audio_file.content_type
+                )
+                
+                if not success:
+                    raise BadRequest(f'Audio transcription failed: {error_msg}')
+                
+                question = transcribed_text
+                is_voice_input = True
+                app.logger.info(f'Audio transcribed: "{question}"')
+                    
             
-            # Check if this is a JSON request
-            if request.is_json:
-                # Text-only request (backward compatibility)
-                app.logger.info('Parsing as JSON')
+            # Check if this is form data without audio (text question)
+            elif request.form and 'session_id' in request.form:
+                app.logger.info('Processing form request with text question')
+                session_id = request.form.get('session_id')
+                question = request.form.get('question')
+            
+            # Fallback to JSON (backward compatibility)
+            elif request.is_json:
+                app.logger.info('Processing JSON request')
                 data = request.get_json()
                 session_id = data.get('session_id')
                 question = data.get('question')
             
-            # Check if this is a form data request (multipart or urlencoded)
-            elif request.form or request.files:
-                app.logger.info(f'Parsing as form data - form keys: {list(request.form.keys())}, file keys: {list(request.files.keys())}')
-                
-                # Multipart request (potentially with audio)
-                session_id = request.form.get('session_id')
-                
-                # Check if audio file is provided
-                if 'audio' in request.files:
-                    audio_file = request.files['audio']
-                    
-                    # Validate audio file
-                    is_valid, error_msg = validate_audio(audio_file)
-                    if not is_valid:
-                        if 'too large' in error_msg.lower():
-                            raise RequestEntityTooLarge(error_msg)
-                        else:
-                            raise BadRequest(error_msg)
-                    
-                    # Read audio bytes
-                    audio_bytes = audio_file.read()
-                    audio_file.seek(0)
-                    
-                    # Save audio file for debugging
-                    try:
-                        import os
-                        from datetime import datetime
-                        debug_dir = 'test_images'
-                        os.makedirs(debug_dir, exist_ok=True)
-                        timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
-                        debug_filename = f"{debug_dir}/audio_{session_id}_{timestamp}.wav"
-                        with open(debug_filename, 'wb') as f:
-                            f.write(audio_bytes)
-                        app.logger.info(f'Saved audio file to {debug_filename}')
-                    except Exception as e:
-                        app.logger.warning(f'Failed to save debug audio: {e}')
-                    
-                    # Transcribe audio to text
-                    app.logger.info(f'Transcribing audio for session {session_id}')
-                    success, transcribed_text, error_msg = transcribe_audio(
-                        audio_bytes,
-                        audio_file.content_type
-                    )
-                    
-                    if not success:
-                        raise BadRequest(f'Audio transcription failed: {error_msg}')
-                    
-                    question = transcribed_text
-                    is_voice_input = True
-                    app.logger.info(f'Audio transcribed: "{question}"')
-                    
-                else:
-                    # No audio, check for text question
-                    question = request.form.get('question')
-            
             else:
-                # Neither JSON nor form data
-                app.logger.warning(f'Unable to parse request - Content-Type: {request.content_type}, is_json: {request.is_json}, has form: {bool(request.form)}, has files: {bool(request.files)}')
+                # Unable to parse request
+                app.logger.warning(f'Unable to parse request - Content-Type: {request.content_type}')
                 raise BadRequest('Request must be JSON or multipart/form-data')
             
             # 3. Validate required fields

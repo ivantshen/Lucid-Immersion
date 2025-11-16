@@ -1,6 +1,6 @@
 {
   "session_id": "restaurant-burger",
-  "timestamp": "2025-11-16T11:18:41.206321",
+  "timestamp": "2025-11-16T12:10:50.965307",
   "task": "Burger",
   "step": "1",
   "gaze_vector": {
@@ -8,26 +8,26 @@
     "y": 0.0,
     "z": 1.0
   },
-  "image_analysis": "The user's view shows a meal at a restaurant, prominently featuring an open-faced burger with cheese, bacon, lettuce, tomato, and red onion on the bottom bun. Accompanying the burger are small bowls of ketchup and mustard, a pickle, and a side salad. The user's gaze is directed towards the center of the burger plate.",
+  "image_analysis": "The scene displays a meal featuring an open-faced burger with bacon, cheese, lettuce, tomato, and onion, alongside a side salad, ketchup, mustard, and a pickle. Other table items like pasta and drinks are also visible. The user's gaze is directed towards the burger.",
   "instruction": {
     "steps": [
-      "Carefully place the top bun onto the burger patty and toppings to assemble it.",
-      "Add ketchup from the red bowl or mustard from the yellow bowl to your burger or plate, as desired.",
-      "You are now ready to enjoy your burger. You can pick it up or use a knife and fork to cut it."
+      "Begin by adding your desired condiments, such as the visible ketchup or mustard, to your burger.",
+      "If you wish to eat it as a closed burger, locate the top bun and place it on top of the ingredients.",
+      "Prepare to enjoy your burger by either picking it up or using your cutlery to cut it."
     ],
-    "target_id": "burger",
+    "target_id": "condiments",
     "haptic_cue": "guide_to_target"
   },
   "error": null,
   "follow_up_qa": [
     {
-      "timestamp": "2025-11-16T11:19:00.250692Z",
+      "timestamp": "2025-11-16T12:11:15.224637Z",
       "question": "The stale smell of old beer, lingers it takes heat to bring out the odor.  A cold dip restores health and zest, a salt pickle tastes fine with ham tacos. Al pastor are my favorite. A zestful food is the hot cross bun.",
       "answer_steps": [
-        "1. Pick up your assembled burger.",
-        "Take a bite and enjoy your meal.",
-        "Alternatively, use your knife and fork to cut the burger into smaller, manageable pieces.",
-        "Enjoy the pickle and side salad alongside your burger."
+        "1.  Proceed with adding your desired condiments, such as the visible ketchup or mustard, to your burger.",
+        "If you wish to eat it as a closed burger, place the top bun on top of the ingredients.",
+        "You can enjoy the visible pickle and side salad alongside your burger.",
+        "Prepare to eat your burger by either picking it up or using your cutlery to cut it."
       ]
     }
   ]

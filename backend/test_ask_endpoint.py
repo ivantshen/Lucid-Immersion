@@ -5,7 +5,8 @@ import requests
 import io
 
 # Configuration
-BASE_URL = "https://backend-api-141904499148.us-central1.run.app"
+BASE_URL = "http://localhost:8080"  # Test local server
+# BASE_URL = "https://backend-api-141904499148.us-central1.run.app"  # Production
 API_KEY = "my-super-secret-key-12345"
 
 def test_ask_with_audio():

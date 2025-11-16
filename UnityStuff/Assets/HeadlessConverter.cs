@@ -342,9 +342,14 @@ public class HeadlessConverter : MonoBehaviour
         // Create the request to the /ask endpoint
         using (UnityWebRequest www = UnityWebRequest.Post(askEndpointUrl, form))
         {
+            // Set Authorization header BEFORE sending
             www.SetRequestHeader("Authorization", "Bearer " + apiKey);
-
+            
+            // Log what we're sending for debugging
             Log($"Sending audio question to /ask endpoint for session: {lastSessionId}");
+            Log($"Audio size: {audioData.Length} bytes");
+            Log($"Content-Type: {www.GetRequestHeader("Content-Type")}");
+            
             yield return www.SendWebRequest();
 
             isRequestPending = false;
