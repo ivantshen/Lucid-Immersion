@@ -55,7 +55,7 @@ public class HeadlessConverter : MonoBehaviour
     private AudioClip recording;
     private bool isRecording = false;
     private const int MAX_RECORD_TIME_SEC = 10;
-    private const int SAMPLE_RATE = 44100;
+    private const int SAMPLE_RATE = 16000;
 
     private bool isRequestPending = false;
     private string sessionId = "";
@@ -408,24 +408,32 @@ public class HeadlessConverter : MonoBehaviour
     }
 
     /// <summary>
-    /// Converts a stereo AudioClip to a mono AudioClip by averaging the channels.
+    /// Converts a multi-channel AudioClip to a mono AudioClip by averaging all channels.
     /// </summary>
-    AudioClip ConvertToMono(AudioClip stereoClip)
+    AudioClip ConvertToMono(AudioClip multiChannelClip)
     {
-        float[] stereoData = new float[stereoClip.samples * stereoClip.channels];
-        stereoClip.GetData(stereoData, 0);
+        Log($"Converting clip with {multiChannelClip.channels} channels to mono.");
 
-        // Create new mono data array, which is half the size
-        float[] monoData = new float[stereoClip.samples];
+        float[] multiChannelData = new float[multiChannelClip.samples * multiChannelClip.channels];
+        multiChannelClip.GetData(multiChannelData, 0);
+
+        float[] monoData = new float[multiChannelClip.samples];
+        int channels = multiChannelClip.channels;
 
         for (int i = 0; i < monoData.Length; i++)
         {
-            // Average the left (i*2) and right (i*2 + 1) channels
-            monoData[i] = (stereoData[i * 2] + stereoData[i * 2 + 1]) / 2.0f;
+            float sum = 0;
+            // Sum all channels for this sample
+            for (int c = 0; c < channels; c++)
+            {
+                sum += multiChannelData[i * channels + c];
+            }
+            // Average the channels
+            monoData[i] = sum / channels;
         }
 
         // Create a new mono AudioClip
-        AudioClip monoClip = AudioClip.Create("MonoRecording", stereoClip.samples, 1, stereoClip.frequency, false);
+        AudioClip monoClip = AudioClip.Create("MonoRecording", multiChannelClip.samples, 1, multiChannelClip.frequency, false);
         monoClip.SetData(monoData, 0);
 
         return monoClip;
