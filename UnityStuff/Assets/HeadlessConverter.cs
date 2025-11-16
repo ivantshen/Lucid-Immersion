@@ -27,6 +27,7 @@ public class HeadlessConverter : MonoBehaviour
 
     [Header("UI Display")]
     [Tooltip("Text element to display the image analysis (header)")]
+    public GameObject responsePanel;
     public TMP_Text headerText;
 
     [Tooltip("Text element to display timestamp and step (subheader)")]
@@ -112,7 +113,12 @@ public class HeadlessConverter : MonoBehaviour
             Log("Microphone permission is already granted.");
         }
 
-        // --- END RECOMMENDED ---
+
+        // Ensure the response panel is hidden on start
+        if (responsePanel != null)
+        {
+            responsePanel.SetActive(false);
+        }
     }
 
     /// <summary>
@@ -142,6 +148,16 @@ public class HeadlessConverter : MonoBehaviour
         if (OVRInput.GetUp(OVRInput.Button.Two) && isRecording)
         {
             StopAndUploadRecording();
+        }
+        // 'X' button is OVRInput.Button.Three
+        if (OVRInput.GetDown(OVRInput.Button.Three))
+        {
+            if (responsePanel != null)
+            {
+                Log("'X' button pressed. Toggling response window.");
+                // This line toggles the panel's active state
+                responsePanel.SetActive(!responsePanel.activeSelf);
+            }
         }
     }
 
@@ -447,6 +463,7 @@ public class HeadlessConverter : MonoBehaviour
     /// </summary>
     void DisplayStructuredResponse(AssistResponse response, string imageAnalysis, string timestamp)
     {
+        if (responsePanel != null) responsePanel.SetActive(true); // <-- ADD THIS
         // Header: Image Analysis
         if (headerText != null)
         {
@@ -487,6 +504,8 @@ public class HeadlessConverter : MonoBehaviour
     /// </summary>
     void DisplayError(string errorMessage)
     {
+        if (responsePanel != null) responsePanel.SetActive(true); // <-- ADD THIS
+
         if (headerText != null)
         {
             headerText.text = "Error";
