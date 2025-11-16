@@ -5,10 +5,16 @@ import pytest
 import json
 import os
 import tempfile
-from unittest.mock import Mock, patch
+import io
+from unittest.mock import Mock, patch, MagicMock
 from pathlib import Path
+from werkzeug.datastructures import FileStorage
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Mock google.cloud.speech before importing app modules
+sys.modules['google.cloud'] = MagicMock()
+sys.modules['google.cloud.speech'] = MagicMock()
 
 from app.main import create_app
 
@@ -321,3 +327,204 @@ class TestAskEndpoint:
         
         # Restore API key
         app.config['GEMINI_API_KEY'] = original_key
+    
+    # Voice input tests
+    
+    @patch('app.routes.ask.transcribe_audio')
+    @patch('app.routes.ask.ChatGoogleGenerativeAI')
+    def test_ask_with_audio_file_returns_transcribed_answer(self, mock_llm_class, mock_transcribe, client, app, sample_session_context):
+        """Test /ask with audio file returns transcribed answer"""
+        session_id, context_data = sample_session_context
+        
+        headers = {'Authorization': 'Bearer test-api-key'}
+        
+        # Create a mock WAV audio file
+        audio_data = b'RIFF' + b'\x00' * 4 + b'WAVE' + b'\x00' * 100
+        audio_file = io.BytesIO(audio_data)
+        audio_file.name = 'question.wav'
+        
+        # Mock transcription
+        mock_transcribe.return_value = (True, "What if the cable doesn't fit?", "")
+        
+        # Mock Gemini response
+        mock_llm = Mock()
+        mock_response = Mock()
+        mock_response.content = "1. Check the orientation of the connector\n2. Ensure you're using the correct 8-pin cable\n3. Do not force the connection"
+        mock_llm.invoke.return_value = mock_response
+        mock_llm_class.return_value = mock_llm
+        
+        # Send multipart request with audio
+        data = {
+            'session_id': session_id,
+            'audio': (audio_file, 'question.wav', 'audio/wav')
+        }
+        
+        response = client.post('/ask',
+                             data=data,
+                             headers=headers,
+                             content_type='multipart/form-data')
+        
+        assert response.status_code == 200
+        response_data = json.loads(response.data)
+        
+        # Verify response structure
+        assert response_data['status'] == 'success'
+        assert response_data['session_id'] == session_id
+        assert 'answer_steps' in response_data
+        assert isinstance(response_data['answer_steps'], list)
+        assert len(response_data['answer_steps']) > 0
+        
+        # Verify transcribed question is included
+        assert 'transcribed_question' in response_data
+        assert response_data['transcribed_question'] == "What if the cable doesn't fit?"
+        
+        # Verify transcribe_audio was called
+        mock_transcribe.assert_called_once()
+        call_args = mock_transcribe.call_args
+        assert call_args[0][1] == 'audio/wav'  # content_type
+        
+        # Verify LLM was called with transcribed text
+        mock_llm.invoke.assert_called_once()
+    
+    @patch('app.routes.ask.validate_audio')
+    def test_ask_with_invalid_audio_returns_400(self, mock_validate, client, app, sample_session_context):
+        """Test /ask with invalid audio returns 400"""
+        session_id, _ = sample_session_context
+        
+        headers = {'Authorization': 'Bearer test-api-key'}
+        
+        # Create a mock invalid audio file
+        audio_data = b'invalid audio data'
+        audio_file = io.BytesIO(audio_data)
+        audio_file.name = 'invalid.wav'
+        
+        # Mock validation to fail
+        mock_validate.return_value = (False, "Invalid WAV file format")
+        
+        # Send multipart request with invalid audio
+        data = {
+            'session_id': session_id,
+            'audio': (audio_file, 'invalid.wav', 'audio/wav')
+        }
+        
+        response = client.post('/ask',
+                             data=data,
+                             headers=headers,
+                             content_type='multipart/form-data')
+        
+        assert response.status_code == 400
+        response_data = json.loads(response.data)
+        assert 'Invalid WAV file format' in response_data['message']
+    
+    @patch('app.routes.ask.validate_audio')
+    def test_ask_with_oversized_audio_returns_413(self, mock_validate, client, app, sample_session_context):
+        """Test /ask with oversized audio returns 413"""
+        session_id, _ = sample_session_context
+        
+        headers = {'Authorization': 'Bearer test-api-key'}
+        
+        # Create a mock oversized audio file
+        audio_data = b'RIFF' + b'\x00' * 4 + b'WAVE' + b'\x00' * 100
+        audio_file = io.BytesIO(audio_data)
+        audio_file.name = 'large.wav'
+        
+        # Mock validation to fail with size error
+        mock_validate.return_value = (False, "Audio file too large. Maximum 10MB")
+        
+        # Send multipart request with oversized audio
+        data = {
+            'session_id': session_id,
+            'audio': (audio_file, 'large.wav', 'audio/wav')
+        }
+        
+        response = client.post('/ask',
+                             data=data,
+                             headers=headers,
+                             content_type='multipart/form-data')
+        
+        assert response.status_code == 413
+        response_data = json.loads(response.data)
+        # The error handler returns a generic message, but status code is correct
+        assert response_data['status'] == 'error'
+        assert response_data['error_code'] == 'IMAGE_TOO_LARGE'
+    
+    @patch('app.routes.ask.ChatGoogleGenerativeAI')
+    def test_backward_compatibility_with_text_only_requests(self, mock_llm_class, client, app, sample_session_context):
+        """Test backward compatibility with text-only requests (no audio)"""
+        session_id, context_data = sample_session_context
+        
+        headers = {'Authorization': 'Bearer test-api-key'}
+        
+        # Test 1: JSON request (original format)
+        data_json = {
+            'session_id': session_id,
+            'question': 'What is the next step?'
+        }
+        
+        # Mock Gemini response
+        mock_llm = Mock()
+        mock_response = Mock()
+        mock_response.content = "1. Connect the cable\n2. Secure the connection\n3. Verify the LED indicator"
+        mock_llm.invoke.return_value = mock_response
+        mock_llm_class.return_value = mock_llm
+        
+        response = client.post('/ask',
+                             data=json.dumps(data_json),
+                             headers=headers,
+                             content_type='application/json')
+        
+        assert response.status_code == 200
+        response_data = json.loads(response.data)
+        assert response_data['status'] == 'success'
+        assert 'answer_steps' in response_data
+        # Should NOT have transcribed_question for text-only
+        assert 'transcribed_question' not in response_data
+        
+        # Test 2: Multipart request with text question (no audio)
+        data_form = {
+            'session_id': session_id,
+            'question': 'Can you clarify step 2?'
+        }
+        
+        response = client.post('/ask',
+                             data=data_form,
+                             headers=headers,
+                             content_type='multipart/form-data')
+        
+        assert response.status_code == 200
+        response_data = json.loads(response.data)
+        assert response_data['status'] == 'success'
+        assert 'answer_steps' in response_data
+        # Should NOT have transcribed_question for text-only
+        assert 'transcribed_question' not in response_data
+    
+    @patch('app.routes.ask.transcribe_audio')
+    def test_ask_with_audio_transcription_failure(self, mock_transcribe, client, app, sample_session_context):
+        """Test /ask handles audio transcription failures gracefully"""
+        session_id, _ = sample_session_context
+        
+        headers = {'Authorization': 'Bearer test-api-key'}
+        
+        # Create a mock audio file
+        audio_data = b'RIFF' + b'\x00' * 4 + b'WAVE' + b'\x00' * 100
+        audio_file = io.BytesIO(audio_data)
+        audio_file.name = 'question.wav'
+        
+        # Mock transcription to fail
+        mock_transcribe.return_value = (False, "", "No speech detected in audio")
+        
+        # Send multipart request with audio
+        data = {
+            'session_id': session_id,
+            'audio': (audio_file, 'question.wav', 'audio/wav')
+        }
+        
+        response = client.post('/ask',
+                             data=data,
+                             headers=headers,
+                             content_type='multipart/form-data')
+        
+        assert response.status_code == 400
+        response_data = json.loads(response.data)
+        assert 'transcription failed' in response_data['message'].lower()
+        assert 'No speech detected' in response_data['message']

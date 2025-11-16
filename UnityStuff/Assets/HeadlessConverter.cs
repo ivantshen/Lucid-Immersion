@@ -18,8 +18,10 @@ public class HeadlessConverter : MonoBehaviour
     public PassthroughCameraAccess passthroughAccess;
 
     [Header("Networking")]
-    [Tooltip("The full URL of your Flask endpoint")]
-    public string flaskEndpointUrl = "https://backend-api-141904499148.us-central1.run.app/assist";
+    [Tooltip("The full URL of your Flask /assist endpoint")]
+    public string assistEndpointUrl = "https://backend-api-141904499148.us-central1.run.app/assist";
+    [Tooltip("The full URL of your Flask /ask endpoint")]
+    public string askEndpointUrl = "https://backend-api-141904499148.us-central1.run.app/ask";
     [Tooltip("The API key for your backend service")]
     public string apiKey = "my-super-secret-key-12345"; // Set this in the Inspector
 
@@ -57,6 +59,7 @@ public class HeadlessConverter : MonoBehaviour
 
     private bool isRequestPending = false;
     private string sessionId = "";
+    private string lastSessionId = ""; // Store session ID from /assist for use with /ask
 
     // A simple class to format our JSON payload
     [System.Serializable]
@@ -212,7 +215,7 @@ public class HeadlessConverter : MonoBehaviour
         form.AddField("gaze_vector", gazeVectorJson);
 
         // Create the request
-        using (UnityWebRequest www = UnityWebRequest.Post(flaskEndpointUrl, form))
+        using (UnityWebRequest www = UnityWebRequest.Post(assistEndpointUrl, form))
         {
             // Add Authorization header
             www.SetRequestHeader("Authorization", "Bearer " + apiKey);
@@ -235,6 +238,10 @@ public class HeadlessConverter : MonoBehaviour
                     Log("Raw response: " + responseText);
 
                     AssistResponse response = JsonUtility.FromJson<AssistResponse>(responseText);
+
+                    // Store the session ID for future /ask requests
+                    lastSessionId = response.session_id;
+                    Log($"Stored session ID: {lastSessionId}");
 
                     // Display the structured response
                     DisplayStructuredResponse(response, response.image_analysis, response.timestamp);
@@ -314,32 +321,54 @@ public class HeadlessConverter : MonoBehaviour
 
     IEnumerator UploadAudioData(byte[] audioData)
     {
+        // Check if we have a session ID from a previous /assist call
+        if (string.IsNullOrEmpty(lastSessionId))
+        {
+            Log("ERROR: No session ID available. Please take a snapshot first (press A button).");
+            DisplayError("No active session. Take a snapshot first before asking questions.");
+            yield break;
+        }
+
         isRequestPending = true;
 
         WWWForm form = new WWWForm();
 
-        // Add the audio file. Note the field name is "audio"
+        // Add the audio file for the /ask endpoint
         form.AddBinaryData("audio", audioData, "recording.wav", "audio/wav");
 
-        // Add the same metadata as the snapshot
-        form.AddField("task_step", taskStep.ToString());
-        form.AddField("current_task", currentTask);
-        form.AddField("session_id", sessionId);
+        // Add the session_id from the previous /assist call
+        form.AddField("session_id", lastSessionId);
 
-        // Create the request
-        using (UnityWebRequest www = UnityWebRequest.Post(flaskEndpointUrl, form))
+        // Create the request to the /ask endpoint
+        using (UnityWebRequest www = UnityWebRequest.Post(askEndpointUrl, form))
         {
             www.SetRequestHeader("Authorization", "Bearer " + apiKey);
 
-            Log("Sending audio data to server...");
+            Log($"Sending audio question to /ask endpoint for session: {lastSessionId}");
             yield return www.SendWebRequest();
 
             isRequestPending = false;
 
             if (www.result == UnityWebRequest.Result.Success)
             {
-                Log("SUCCESS: Audio upload complete. Server responded!");
-                Log(www.downloadHandler.text);
+                Log("SUCCESS: Audio question processed. Server responded!");
+
+                // Parse the JSON response from /ask endpoint
+                try
+                {
+                    string responseText = www.downloadHandler.text;
+                    Log("Raw response: " + responseText);
+
+                    AskResponse response = JsonUtility.FromJson<AskResponse>(responseText);
+
+                    // Display the transcribed question and answer
+                    DisplayAskResponse(response);
+                }
+                catch (Exception e)
+                {
+                    Log("Error parsing /ask response: " + e.Message);
+                    DisplayError("Failed to parse server response: " + e.Message);
+                }
             }
             else
             {
@@ -348,6 +377,7 @@ public class HeadlessConverter : MonoBehaviour
                 {
                     Log("Error details: " + www.downloadHandler.text);
                 }
+                DisplayError($"Audio question failed: {www.error}");
             }
         }
     }
@@ -443,7 +473,52 @@ public class HeadlessConverter : MonoBehaviour
     }
 }
 
-// Response data structure for parsing JSON response from backend
+    /// <summary>
+    /// Display the response from /ask endpoint (voice question)
+    /// Header: Transcribed Question
+    /// Subheader: Task context
+    /// Content: Answer steps as a list
+    /// </summary>
+    void DisplayAskResponse(AskResponse response)
+    {
+        // Header: Show the transcribed question
+        if (headerText != null)
+        {
+            string questionText = response.transcribed_question ?? "Voice Question";
+            headerText.text = $"Q: {questionText}";
+        }
+
+        // Subheader: Show task context
+        if (subheaderText != null)
+        {
+            string contextInfo = $"Task: {response.context.task} | Step: {response.context.step}";
+            subheaderText.text = contextInfo;
+        }
+
+        // Main Content: Answer steps as a numbered list
+        if (instructionText != null)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine("Answer:");
+            sb.AppendLine();
+
+            for (int i = 0; i < response.answer_steps.Length; i++)
+            {
+                sb.AppendLine($"{i + 1}. {response.answer_steps[i]}");
+                if (i < response.answer_steps.Length - 1)
+                {
+                    sb.AppendLine();
+                }
+            }
+
+            instructionText.text = sb.ToString();
+        }
+
+        Log("Voice question response displayed successfully");
+    }
+}
+
+// Response data structure for parsing JSON response from /assist endpoint
 [System.Serializable]
 public class AssistResponse
 {
@@ -455,4 +530,23 @@ public class AssistResponse
     public string haptic_cue;
     public string image_analysis;
     public string timestamp;
+}
+
+// Response data structure for parsing JSON response from /ask endpoint
+[System.Serializable]
+public class AskResponse
+{
+    public string status;
+    public string session_id;
+    public string[] answer_steps;
+    public string transcribed_question;
+    public AskContext context;
+}
+
+[System.Serializable]
+public class AskContext
+{
+    public string task;
+    public string step;
+    public string previous_instruction;
 }

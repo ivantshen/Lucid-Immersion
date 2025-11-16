@@ -11,7 +11,7 @@ from pathlib import Path
 # Configuration
 API_URL = "http://localhost:8080/assist"
 API_KEY = os.getenv("API_KEY", "my-super-secret-key-12345")  # From .env
-IMAGE_PATH = "test_images/ITB4.jpg"  # Update extension if needed (.png, .jpeg, etc.)
+IMAGE_PATH = "test_images/ITB3.jpg"  # Update extension if needed (.png, .jpeg, etc.)
 
 #Test data for Japanese homework scenario
 # TEST_DATA = {
@@ -28,19 +28,19 @@ IMAGE_PATH = "test_images/ITB4.jpg"  # Update extension if needed (.png, .jpeg, 
 #     "session_id": "gym-session"
 # }
 
-# TEST_DATA = {
-#     "task_step": "1",
-#     "current_task": "Burger",
-#     "gaze_vector": json.dumps({"x": 0.0, "y": 0.0, "z": 1.0}),
-#     "session_id": "restaurant-burger"
-# }
-
 TEST_DATA = {
     "task_step": "1",
-    "current_task": "Camera",
+    "current_task": "Burger",
     "gaze_vector": json.dumps({"x": 0.0, "y": 0.0, "z": 1.0}),
-    "session_id": "camera-setup"
+    "session_id": "restaurant-burger"
 }
+
+# TEST_DATA = {
+#     "task_step": "1",
+#     "current_task": "Camera",
+#     "gaze_vector": json.dumps({"x": 0.0, "y": 0.0, "z": 1.0}),
+#     "session_id": "camera-setup"
+# }
 
 # TEST_DATA = {
 #     "task_step": "1",
@@ -48,6 +48,142 @@ TEST_DATA = {
 #     "gaze_vector": json.dumps({"x": 0.0, "y": 0.0, "z": 1.0}),
 #     "session_id": "meta-quest-3-analysis"
 # }
+
+
+def test_ask_with_audio(session_id: str, audio_path: str):
+    """
+    Send an audio file to the /ask endpoint for voice input.
+    
+    Args:
+        session_id: The session ID from the previous /assist call
+        audio_path: Path to the audio file
+    
+    Returns:
+        The response JSON or None if failed
+    """
+    print("\n" + "=" * 60)
+    print("Testing /ask Endpoint (Voice Input)")
+    print("=" * 60)
+    
+    ask_url = "http://localhost:8080/ask"
+    
+    # Check if audio file exists
+    if not os.path.exists(audio_path):
+        print(f"❌ Error: Audio file not found at {audio_path}")
+        return None
+    
+    # Get file info
+    file_size = os.path.getsize(audio_path)
+    file_ext = Path(audio_path).suffix.lower()
+    
+    print(f"\n📁 Audio Info:")
+    print(f"   Path: {audio_path}")
+    print(f"   Size: {file_size:,} bytes ({file_size / 1024:.2f} KB)")
+    print(f"   Format: {file_ext}")
+    
+    # Check file size
+    if file_size > 10 * 1024 * 1024:
+        print(f"⚠️  Warning: Audio is larger than 10MB and will be rejected")
+        return None
+    
+    print(f"\n📤 Sending Voice Question:")
+    print(f"   URL: {ask_url}")
+    print(f"   Session ID: {session_id}")
+    print(f"   Audio File: {os.path.basename(audio_path)}")
+    
+    try:
+        headers = {
+            'Authorization': f'Bearer {API_KEY}'
+        }
+        
+        # Determine content type based on file extension
+        content_type_map = {
+            '.wav': 'audio/wav',
+            '.mp3': 'audio/mpeg',
+            '.ogg': 'audio/ogg',
+            '.flac': 'audio/flac'
+        }
+        content_type = content_type_map.get(file_ext, 'audio/wav')
+        
+        # Open and send audio file
+        with open(audio_path, 'rb') as audio_file:
+            files = {
+                'audio': (os.path.basename(audio_path), audio_file, content_type)
+            }
+            data = {
+                'session_id': session_id
+            }
+            
+            print(f"\n⏳ Processing (transcribing audio)...")
+            response = requests.post(
+                ask_url,
+                files=files,
+                data=data,
+                headers=headers,
+                timeout=30
+            )
+        
+        # Print response
+        print(f"\n📥 Response:")
+        print(f"   Status Code: {response.status_code}")
+        
+        if response.status_code == 200:
+            print(f"   ✅ Success!")
+            result = response.json()
+            
+            print(f"\n📋 Result:")
+            print(f"   Session ID: {result.get('session_id', 'N/A')}")
+            
+            # Display transcribed question if available
+            transcribed = result.get('transcribed_question')
+            if transcribed:
+                print(f"\n   🎤 Transcribed Question: \"{transcribed}\"")
+            
+            # Display answer steps
+            answer_steps = result.get('answer_steps', [])
+            if isinstance(answer_steps, list) and len(answer_steps) > 0:
+                print(f"\n   💬 Answer:")
+                for i, step in enumerate(answer_steps, 1):
+                    print(f"      {i}. {step}")
+            else:
+                print(f"\n   💬 Answer: {answer_steps}")
+            
+            # Display context
+            context = result.get('context', {})
+            if context:
+                print(f"\n   📝 Context:")
+                print(f"      Task: {context.get('task', 'N/A')}")
+                print(f"      Step: {context.get('step', 'N/A')}")
+            
+            # Pretty print full response
+            print(f"\n📄 Full Response JSON:")
+            print(json.dumps(result, indent=2))
+            
+            return result
+            
+        else:
+            print(f"   ❌ Error!")
+            try:
+                error_data = response.json()
+                print(f"\n   Error Details:")
+                print(json.dumps(error_data, indent=2))
+            except:
+                print(f"\n   Response Text: {response.text}")
+            return None
+        
+    except requests.exceptions.ConnectionError:
+        print(f"\n❌ Connection Error!")
+        print(f"   Make sure the Flask server is running")
+        return None
+        
+    except requests.exceptions.Timeout:
+        print(f"\n❌ Request Timeout!")
+        print(f"   The server took too long to respond (> 30s)")
+        return None
+        
+    except Exception as e:
+        print(f"\n❌ Unexpected Error: {str(e)}")
+        return None
 
 
 def test_ask_followup(session_id: str, question: str):
@@ -62,7 +198,7 @@ def test_ask_followup(session_id: str, question: str):
         The response JSON or None if failed
     """
     print("\n" + "=" * 60)
-    print("Testing /ask Endpoint (Follow-up Question)")
+    print("Testing /ask Endpoint (Text Question)")
     print("=" * 60)
     
     ask_url = "http://localhost:8080/ask"
@@ -312,19 +448,43 @@ if __name__ == "__main__":
                 print("\n👋 Ending session. Goodbye!")
                 break
             
-            # Get user's question
-            question = input("\n❓ Enter your follow-up question: ").strip()
+            # Ask for input method
+            print("\n📝 Choose input method:")
+            print("   1. Text question")
+            print("   2. Voice (audio file)")
+            input_method = input("\nEnter choice (1 or 2): ").strip()
             
-            if not question:
-                print("⚠️  Question cannot be empty. Please try again.")
+            if input_method == '1':
+                # Get user's text question
+                question = input("\n❓ Enter your follow-up question: ").strip()
+                
+                if not question:
+                    print("⚠️  Question cannot be empty. Please try again.")
+                    continue
+                
+                # Send the question to /ask endpoint
+                print()
+                result = test_ask_followup(session_id, question)
+                
+                if not result:
+                    print("\n⚠️  Failed to get response. You can try again or exit.")
+            
+            elif input_method == '2':
+                # Use the harvard.wav audio file
+                audio_path = "test_images/harvard.wav"
+                
+                print(f"\n🎤 Using audio file: {audio_path}")
+                
+                # Send the audio to /ask endpoint
+                print()
+                result = test_ask_with_audio(session_id, audio_path)
+                
+                if not result:
+                    print("\n⚠️  Failed to get response. You can try again or exit.")
+            
+            else:
+                print("⚠️  Invalid choice. Please enter 1 or 2.")
                 continue
-            
-            # Send the question to /ask endpoint
-            print()
-            result = test_ask_followup(session_id, question)
-            
-            if not result:
-                print("\n⚠️  Failed to get response. You can try again or exit.")
     else:
         print("\n⚠️  Skipping /ask test - no session_id from /assist call")
     

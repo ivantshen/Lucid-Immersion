@@ -1,10 +1,10 @@
 """
-/ask endpoint for text-only follow-up questions.
+/ask endpoint for text-only and voice follow-up questions.
 """
 import json
 from datetime import datetime
 from flask import current_app, request, jsonify
-from werkzeug.exceptions import BadRequest, Unauthorized, NotFound
+from werkzeug.exceptions import BadRequest, Unauthorized, NotFound, RequestEntityTooLarge
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage
 import sys
@@ -14,6 +14,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 # Import utilities
 from app.utils.session import load_session_context
 from app.utils.validation import sanitize_string
+from app.utils.audio_validation import validate_audio, MAX_AUDIO_SIZE
+from app.utils.speech_to_text import transcribe_audio
 
 
 def register_ask_route(app):
@@ -22,11 +24,17 @@ def register_ask_route(app):
     @app.route('/ask', methods=['POST'])
     def ask():
         """
-        Follow-up question endpoint for text-only queries about previous sessions.
+        Follow-up question endpoint for text and voice queries about previous sessions.
         
-        Accepts JSON with:
-        - session_id: str (required, must reference existing session)
-        - question: str (required, user's follow-up question)
+        Accepts either:
+        1. JSON with:
+           - session_id: str (required, must reference existing session)
+           - question: str (required, user's follow-up question)
+        
+        2. Multipart/form-data with:
+           - session_id: str (required, must reference existing session)
+           - audio: file (optional, audio file for voice input)
+           - question: str (optional, text question - used if no audio provided)
         
         Returns JSON with answer based on previous session context.
         """
@@ -43,21 +51,62 @@ def register_ask_route(app):
             if api_key != app.config['API_KEY']:
                 raise Unauthorized('Invalid API key')
             
-            # 2. Parse JSON request body
-            if not request.is_json:
-                raise BadRequest('Request must be JSON')
+            # 2. Parse request data (JSON or multipart/form-data)
+            question = None
+            is_voice_input = False
             
-            data = request.get_json()
+            if request.is_json:
+                # Text-only request (backward compatibility)
+                data = request.get_json()
+                session_id = data.get('session_id')
+                question = data.get('question')
+                
+            elif request.content_type and 'multipart/form-data' in request.content_type:
+                # Multipart request (potentially with audio)
+                session_id = request.form.get('session_id')
+                
+                # Check if audio file is provided
+                if 'audio' in request.files:
+                    audio_file = request.files['audio']
+                    
+                    # Validate audio file
+                    is_valid, error_msg = validate_audio(audio_file)
+                    if not is_valid:
+                        if 'too large' in error_msg.lower():
+                            raise RequestEntityTooLarge(error_msg)
+                        else:
+                            raise BadRequest(error_msg)
+                    
+                    # Read audio bytes
+                    audio_bytes = audio_file.read()
+                    audio_file.seek(0)
+                    
+                    # Transcribe audio to text
+                    app.logger.info(f'Transcribing audio for session {session_id}')
+                    success, transcribed_text, error_msg = transcribe_audio(
+                        audio_bytes,
+                        audio_file.content_type
+                    )
+                    
+                    if not success:
+                        raise BadRequest(f'Audio transcription failed: {error_msg}')
+                    
+                    question = transcribed_text
+                    is_voice_input = True
+                    app.logger.info(f'Audio transcribed: "{question}"')
+                    
+                else:
+                    # No audio, check for text question
+                    question = request.form.get('question')
+            else:
+                raise BadRequest('Request must be JSON or multipart/form-data')
             
             # 3. Validate required fields
-            session_id = data.get('session_id')
-            question = data.get('question')
-            
             if not session_id:
                 raise BadRequest('Missing required field: session_id')
             
             if not question:
-                raise BadRequest('Missing required field: question')
+                raise BadRequest('Missing required field: question or audio')
             
             # 4. Sanitize inputs
             session_id = sanitize_string(session_id)
@@ -161,6 +210,10 @@ Be concise, practical, and based on the previous context."""
                 }
             }
             
+            # Add transcribed question if voice input was used
+            if is_voice_input:
+                response_data['transcribed_question'] = question
+            
             # 10. Log completion
             duration_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
             app.logger.info('Follow-up question completed', extra={
@@ -174,7 +227,7 @@ Be concise, practical, and based on the previous context."""
             
             return jsonify(response_data), 200
             
-        except (BadRequest, Unauthorized, NotFound) as e:
+        except (BadRequest, Unauthorized, NotFound, RequestEntityTooLarge) as e:
             # Re-raise HTTP exceptions
             raise
             
