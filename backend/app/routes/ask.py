@@ -55,55 +55,67 @@ def register_ask_route(app):
             question = None
             is_voice_input = False
             
-            # Check if we have form data or files (more flexible than content_type check)
-            has_form_data = len(request.form) > 0 or len(request.files) > 0
-            
-            if request.is_json:
-                # Text-only request (backward compatibility)
-                data = request.get_json()
-                session_id = data.get('session_id')
-                question = data.get('question')
+            # Try form data first (most common for Unity)
+            try:
+                # Accessing request.form/files triggers Flask to parse multipart data
+                has_files = len(request.files) > 0
+                has_form = len(request.form) > 0
                 
-            elif has_form_data:
-                # Multipart request (potentially with audio)
-                # This works regardless of exact Content-Type header format
-                session_id = request.form.get('session_id')
+                app.logger.info(f'Request parsing - Content-Type: {request.content_type}, has_files: {has_files}, has_form: {has_form}')
                 
-                # Check if audio file is provided
-                if 'audio' in request.files:
-                    audio_file = request.files['audio']
+                if has_files or has_form:
+                    # Multipart request (potentially with audio)
+                    session_id = request.form.get('session_id')
                     
-                    # Validate audio file
-                    is_valid, error_msg = validate_audio(audio_file)
-                    if not is_valid:
-                        if 'too large' in error_msg.lower():
-                            raise RequestEntityTooLarge(error_msg)
-                        else:
-                            raise BadRequest(error_msg)
-                    
-                    # Read audio bytes
-                    audio_bytes = audio_file.read()
-                    audio_file.seek(0)
-                    
-                    # Transcribe audio to text
-                    app.logger.info(f'Transcribing audio for session {session_id}')
-                    success, transcribed_text, error_msg = transcribe_audio(
-                        audio_bytes,
-                        audio_file.content_type
-                    )
-                    
-                    if not success:
-                        raise BadRequest(f'Audio transcription failed: {error_msg}')
-                    
-                    question = transcribed_text
-                    is_voice_input = True
-                    app.logger.info(f'Audio transcribed: "{question}"')
-                    
+                    # Check if audio file is provided
+                    if 'audio' in request.files:
+                        audio_file = request.files['audio']
+                        
+                        # Validate audio file
+                        is_valid, error_msg = validate_audio(audio_file)
+                        if not is_valid:
+                            if 'too large' in error_msg.lower():
+                                raise RequestEntityTooLarge(error_msg)
+                            else:
+                                raise BadRequest(error_msg)
+                        
+                        # Read audio bytes
+                        audio_bytes = audio_file.read()
+                        audio_file.seek(0)
+                        
+                        # Transcribe audio to text
+                        app.logger.info(f'Transcribing audio for session {session_id}')
+                        success, transcribed_text, error_msg = transcribe_audio(
+                            audio_bytes,
+                            audio_file.content_type
+                        )
+                        
+                        if not success:
+                            raise BadRequest(f'Audio transcription failed: {error_msg}')
+                        
+                        question = transcribed_text
+                        is_voice_input = True
+                        app.logger.info(f'Audio transcribed: "{question}"')
+                        
+                    else:
+                        # No audio, check for text question
+                        question = request.form.get('question')
+                
+                elif request.is_json:
+                    # Fallback to JSON (backward compatibility)
+                    data = request.get_json()
+                    session_id = data.get('session_id')
+                    question = data.get('question')
+                
                 else:
-                    # No audio, check for text question
-                    question = request.form.get('question')
-            else:
-                raise BadRequest('Request must be JSON or multipart/form-data')
+                    raise BadRequest('Request must be JSON or multipart/form-data')
+                    
+            except (BadRequest, Unauthorized, RequestEntityTooLarge):
+                # Re-raise these specific exceptions
+                raise
+            except Exception as e:
+                app.logger.error(f'Error parsing request: {e}', exc_info=True)
+                raise BadRequest(f'Unable to parse request data: {str(e)}')
             
             # 3. Validate required fields
             if not session_id:
