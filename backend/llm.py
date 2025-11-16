@@ -76,6 +76,9 @@ class VRContextWorkflow:
         Node to save the context to JSON file
         """
         try:
+            if state.get("error"):
+                return state
+            
             import os
             import json
             
@@ -86,10 +89,12 @@ class VRContextWorkflow:
                 instruction_text = [instruction_text]
             
             context_data = {
-                "session_id": state.get("session_id", "unknown"),
+                "status": "success" if not state.get("error") else "error",
+                "session_id": session_id,
+                "instruction_id": f"{session_id}-{task_step}",
                 "timestamp": datetime.utcnow().isoformat(),
                 "task": state.get("current_task", ""),
-                "step": state.get("task_step", ""),
+                "step": task_step,
                 "gaze_vector": state.get("gaze_vector", {}),
                 "image_analysis": state.get("image_analysis", ""),
                 "instruction": {
@@ -99,12 +104,11 @@ class VRContextWorkflow:
                 },
                 "error": state.get("error", None)
             }
-        
+            
             # Ensure contexts directory exists
             os.makedirs("contexts", exist_ok=True)
             
             # Save to file
-            session_id = state.get("session_id", "unknown")
             filepath = f"contexts/{session_id}.json"
             with open(filepath, "w") as f:
                 json.dump(context_data, f, indent=2)
@@ -115,8 +119,9 @@ class VRContextWorkflow:
             context_entry = {
                 "timestamp": datetime.utcnow().isoformat(),
                 "task": state.get("current_task", ""),
-                "step": state.get("task_step", ""),
+                "step": task_step,
                 "image_analysis": state.get("image_analysis", ""),
+                "step_text": state.get("instruction_text", ""),
             }
             
             if "context_history" not in state:
@@ -129,6 +134,7 @@ class VRContextWorkflow:
                 state["context_history"] = state["context_history"][-self.max_context_history:]
             
             return state
+            
         except Exception as e:
             state["error"] = f"Context save failed: {str(e)}"
             return state
@@ -154,7 +160,7 @@ class VRContextWorkflow:
             step = state.get("task_step", "Unknown step")
             gaze = state.get("gaze_vector", {})
             
-            # Combined prompt
+            # Combined prompt - FIXED to match parsing
             prompt = f"""You are an AR assistance system analyzing a user's view.
 
     Task: {task}
@@ -168,7 +174,7 @@ class VRContextWorkflow:
 
     Then, provide step-by-step instructions for this task.
 
-    Respond in JSON format:
+    Respond in this EXACT JSON format:
     {{
     "image_analysis": "Brief analysis of the scene (2-3 sentences)",
     "instruction": {{
@@ -220,29 +226,33 @@ class VRContextWorkflow:
             try:
                 content = response.content.strip()
                 
+                print(f"DEBUG - Raw response: {content[:300]}")  # Show first 300 chars
+                
                 # Extract JSON if wrapped in markdown
                 if "```" in content:
                     start_idx = content.find('{')
                     end_idx = content.rfind('}')
                     if start_idx != -1 and end_idx != -1:
                         content = content[start_idx:end_idx + 1]
+                        print(f"DEBUG - Extracted JSON from markdown")
                 
                 result = json.loads(content)
                 print(f"DEBUG - Parsed JSON successfully")
+                print(f"DEBUG - Keys in result: {result.keys()}")
                 
             except (json.JSONDecodeError, AttributeError) as e:
                 print(f"ERROR - JSON parsing failed: {e}")
-                print(f"ERROR - Content: {content[:200]}")
+                print(f"ERROR - Content: {content[:500]}")
                 
                 # Fallback
                 result = {
                     "image_analysis": "Error parsing analysis",
-                    "instruction_text": "Unable to process image. Please try again.",
+                    "step_text": "Unable to process image. Please try again.",
                     "target_id": "",
                     "haptic_cue": "none"
                 }
             
-            # Validate and set state
+            # Validate and set state - FIXED to use step_text
             valid_cues = ["guide_to_target", "success_pulse", "none"]
             
             state["image_analysis"] = result.get("image_analysis", "No analysis available")
@@ -277,8 +287,10 @@ class VRContextWorkflow:
             state["messages"].append(message)
             state["messages"].append(response)
             
-            print(f"DEBUG - Analysis: {state['image_analysis'][:100]}...")
+            print(f"DEBUG - Analysis: {state['image_analysis'][:100] if state['image_analysis'] else 'None'}...")
             print(f"DEBUG - Instruction: {state['instruction_text']}")
+            print(f"DEBUG - Target ID: {state['target_id']}")
+            print(f"DEBUG - Haptic: {state['haptic_cue']}")
             
             return state
             
