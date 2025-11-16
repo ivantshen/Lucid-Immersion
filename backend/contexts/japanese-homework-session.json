@@ -1,0 +1,23 @@
+{
+  "session_id": "japanese-homework-session",
+  "timestamp": "2025-11-16T01:43:55.822319",
+  "task": "Japanese Homework",
+  "step": "1",
+  "gaze_vector": {
+    "x": 0.0,
+    "y": 0.0,
+    "z": 1.0
+  },
+  "image_analysis": "The image displays an open Japanese textbook with various homework sections. Some sections, like 'Compare and contrast' and 'Comprehension check', have partial handwritten answers. The user's gaze is centered on the page, likely on the 'Comprehension check' or 'Answer the questions about yourself' sections, which are the primary areas requiring completion.",
+  "instruction": {
+    "steps": [
+      "Locate the 'Comprehension check' section, labeled '3)'.",
+      "Read the fifth statement in this section.",
+      "Mark 'O' next to the statement if it is true about Haru, or 'X' if it is false.",
+      "Repeat for the sixth and final statement in the 'Comprehension check' section."
+    ],
+    "target_id": "comprehension_check_section_3",
+    "haptic_cue": "guide_to_target"
+  },
+  "error": null
+}

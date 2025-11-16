@@ -88,10 +88,11 @@ class VRContextWorkflow:
             if isinstance(instruction_text, str):
                 instruction_text = [instruction_text]
             
+            session_id = state.get("session_id", "unknown")
+            task_step = state.get("task_step", "unknown")
+            
             context_data = {
-                "status": "success" if not state.get("error") else "error",
                 "session_id": session_id,
-                "instruction_id": f"{session_id}-{task_step}",
                 "timestamp": datetime.utcnow().isoformat(),
                 "task": state.get("current_task", ""),
                 "step": task_step,
