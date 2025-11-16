@@ -473,50 +473,50 @@ public class HeadlessConverter : MonoBehaviour
     }
 }
 
-    /// <summary>
-    /// Display the response from /ask endpoint (voice question)
-    /// Header: Transcribed Question
-    /// Subheader: Task context
-    /// Content: Answer steps as a list
-    /// </summary>
-    void DisplayAskResponse(AskResponse response)
+/// <summary>
+/// Display the response from /ask endpoint (voice question)
+/// Header: Transcribed Question
+/// Subheader: Task context
+/// Content: Answer steps as a list
+/// </summary>
+void DisplayAskResponse(AskResponse response)
+{
+    // Header: Show the transcribed question
+    if (headerText != null)
     {
-        // Header: Show the transcribed question
-        if (headerText != null)
-        {
-            string questionText = response.transcribed_question ?? "Voice Question";
-            headerText.text = $"Q: {questionText}";
-        }
-
-        // Subheader: Show task context
-        if (subheaderText != null)
-        {
-            string contextInfo = $"Task: {response.context.task} | Step: {response.context.step}";
-            subheaderText.text = contextInfo;
-        }
-
-        // Main Content: Answer steps as a numbered list
-        if (instructionText != null)
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.AppendLine("Answer:");
-            sb.AppendLine();
-
-            for (int i = 0; i < response.answer_steps.Length; i++)
-            {
-                sb.AppendLine($"{i + 1}. {response.answer_steps[i]}");
-                if (i < response.answer_steps.Length - 1)
-                {
-                    sb.AppendLine();
-                }
-            }
-
-            instructionText.text = sb.ToString();
-        }
-
-        Log("Voice question response displayed successfully");
+        string questionText = response.transcribed_question ?? "Voice Question";
+        headerText.text = $"Q: {questionText}";
     }
+
+    // Subheader: Show task context
+    if (subheaderText != null)
+    {
+        string contextInfo = $"Task: {response.context.task} | Step: {response.context.step}";
+        subheaderText.text = contextInfo;
+    }
+
+    // Main Content: Answer steps as a numbered list
+    if (instructionText != null)
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.AppendLine("Answer:");
+        sb.AppendLine();
+
+        for (int i = 0; i < response.answer_steps.Length; i++)
+        {
+            sb.AppendLine($"{i + 1}. {response.answer_steps[i]}");
+            if (i < response.answer_steps.Length - 1)
+            {
+                sb.AppendLine();
+            }
+        }
+
+        instructionText.text = sb.ToString();
+    }
+
+    Log("Voice question response displayed successfully");
 }
+
 
 // Response data structure for parsing JSON response from /assist endpoint
 [System.Serializable]
