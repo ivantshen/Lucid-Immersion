@@ -363,18 +363,6 @@ This is a hackathon project for Immerse The Bay 2025. Contributions, suggestions
 
 ---
 
-## 📄 License
-
-[Add your license here]
-
----
-
-## 👥 Team
-
-[Add team member information here]
-
----
-
 ## 🙏 Acknowledgments
 
 - Meta for Quest 3 and XR SDKs
