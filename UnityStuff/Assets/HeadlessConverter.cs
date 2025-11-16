@@ -7,7 +7,6 @@ using System.Collections;
 using UnityEngine.Networking;
 using Meta.XR;
 using TMPro;
-using Oculus.VR;
 
 // This script now assumes you have an OVRPermissionsRequester
 // component somewhere in your scene to handle the permission pop-up.
@@ -306,8 +305,29 @@ public class HeadlessConverter : MonoBehaviour
         // Stop the microphone
         Microphone.End(null); // 'null' for the default mic
 
-        // Use our WavUtility to convert the AudioClip to a .wav byte array
-        byte[] wavData = WavUtility.FromAudioClip(recording);
+        if (recording == null)
+        {
+            Log("Error: Recording was null.");
+            return;
+        }
+
+        // --- THIS IS THE NEW FIX ---
+        AudioClip clipToEncode = recording; // Start with the original
+
+        if (recording.channels == 2)
+        {
+            Log("Original recording is stereo (2 channels). Converting to mono...");
+            clipToEncode = ConvertToMono(recording);
+        }
+        else
+        {
+            Log($"Recording is already mono ({recording.channels} channel).");
+        }
+        // --- END OF FIX ---
+
+
+        // Use our WavUtility to convert the (now mono) AudioClip to a .wav byte array
+        byte[] wavData = WavUtility.FromAudioClip(clipToEncode);
 
         if (wavData == null)
         {
@@ -319,7 +339,6 @@ public class HeadlessConverter : MonoBehaviour
         // Start a new coroutine to upload the audio
         StartCoroutine(UploadAudioData(wavData));
     }
-
     IEnumerator UploadAudioData(byte[] audioData)
     {
         // Check if we have a session ID from a previous /assist call
@@ -386,6 +405,30 @@ public class HeadlessConverter : MonoBehaviour
                 DisplayError($"Audio question failed: {www.error}");
             }
         }
+    }
+
+    /// <summary>
+    /// Converts a stereo AudioClip to a mono AudioClip by averaging the channels.
+    /// </summary>
+    AudioClip ConvertToMono(AudioClip stereoClip)
+    {
+        float[] stereoData = new float[stereoClip.samples * stereoClip.channels];
+        stereoClip.GetData(stereoData, 0);
+
+        // Create new mono data array, which is half the size
+        float[] monoData = new float[stereoClip.samples];
+
+        for (int i = 0; i < monoData.Length; i++)
+        {
+            // Average the left (i*2) and right (i*2 + 1) channels
+            monoData[i] = (stereoData[i * 2] + stereoData[i * 2 + 1]) / 2.0f;
+        }
+
+        // Create a new mono AudioClip
+        AudioClip monoClip = AudioClip.Create("MonoRecording", stereoClip.samples, 1, stereoClip.frequency, false);
+        monoClip.SetData(monoData, 0);
+
+        return monoClip;
     }
 
     /// <summary>
