@@ -256,7 +256,7 @@ Respond in this EXACT JSON format:
   }}
 }}
 
-Respond ONLY with valid JSON. No additional text."""
+Respond ONLY with valid JSON. No additional text.""" 
             
             # Create multimodal message
             message = HumanMessage(
