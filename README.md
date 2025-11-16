@@ -367,4 +367,4 @@ This is a hackathon project for Immerse The Bay 2025. Contributions, suggestions
 
 - Meta for Quest 3 and XR SDKs
 - Google Cloud for Gemini and Speech-to-Text APIs
-- Immerse The Bay 2025 hackathon organizers
+- Immerse The Bay 2025 hackathon sponsors and organizers
