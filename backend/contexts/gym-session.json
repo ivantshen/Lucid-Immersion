@@ -1,0 +1,45 @@
+{
+  "session_id": "gym-session",
+  "timestamp": "2025-11-16T03:39:51.001653",
+  "task": "Gym Workout",
+  "step": "1",
+  "gaze_vector": {
+    "x": 0.0,
+    "y": 0.0,
+    "z": 1.0
+  },
+  "image_analysis": "The user is seated on a weight bench in a gym, holding 40lb dumbbells in each hand, appearing to be in the initial phase of a bicep curl. Other gym equipment and individuals are visible in the background. The user's gaze is directed downwards, suggesting focus on their current exercise.",
+  "instruction": {
+    "steps": [
+      "Ensure your elbows are tucked close to your body and your back is straight.",
+      "Slowly curl the dumbbells upwards towards your shoulders, squeezing your biceps at the top of the movement.",
+      "Control the movement as you lower the dumbbells back down to the starting position, fully extending your arms.",
+      "Repeat this motion for your desired number of repetitions."
+    ],
+    "target_id": "",
+    "haptic_cue": "none"
+  },
+  "error": null,
+  "follow_up_qa": [
+    {
+      "timestamp": "2025-11-16T03:40:04.366531Z",
+      "question": "How many reps should I do for this exercise?",
+      "answer_steps": [
+        "1.  **For muscle growth (hypertrophy) and strength:** Aim for 3-4 sets of 8-12 repetitions.",
+        "**If your goal is primarily strength with heavier weight:** Consider 3-5 sets of 5-8 repetitions.",
+        "**If you're new to the exercise or focusing on endurance:** You can do 2-3 sets of 12-15 repetitions.",
+        "**Listen to your body:** Choose a weight that allows you to complete the desired number of reps with good form, feeling challenged by the last few reps but not sacrificing technique. If 40lb feels too heavy to maintain form for 8-12 reps, consider reducing the weight."
+      ]
+    },
+    {
+      "timestamp": "2025-11-16T03:40:47.823429Z",
+      "question": "What is the correct form for this exercise?",
+      "answer_steps": [
+        "1.  **Starting Position:** Sit or stand with your feet shoulder-width apart, holding a dumbbell in each hand with palms facing forward. Ensure your elbows are tucked close to your body and your back is straight.",
+        "**Upward Curl:** Slowly curl the dumbbells upwards towards your shoulders, keeping your elbows stationary. Focus on squeezing your biceps at the top of the movement.",
+        "**Downward Control:** Control the movement as you slowly lower the dumbbells back down to the starting position, fully extending your arms.",
+        "**Repetition:** Repeat this motion for your desired number of repetitions, maintaining control and proper form throughout."
+      ]
+    }
+  ]
+}

@@ -140,6 +140,17 @@ def register_error_handlers(app):
             'message': 'Invalid or missing API key'
         }), 401
     
+    @app.errorhandler(404)
+    def not_found(error):
+        """Handle 404 Not Found errors."""
+        app.logger.warning(f'Resource not found: {str(error)}')
+        return jsonify({
+            'status': 'error',
+            'error': 'Not found',
+            'error_code': 'NOT_FOUND',
+            'message': str(error.description) if hasattr(error, 'description') else 'Resource not found'
+        }), 404
+    
     @app.errorhandler(413)
     def request_entity_too_large(error):
         """Handle 413 Request Entity Too Large errors."""
@@ -180,6 +191,10 @@ def register_routes(app):
     # Import and register assist route
     from app.routes.assist import register_assist_route
     register_assist_route(app)
+    
+    # Import and register ask route
+    from app.routes.ask import register_ask_route
+    register_ask_route(app)
     
     @app.route('/health', methods=['GET'])
     def health():

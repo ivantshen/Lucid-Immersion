@@ -175,7 +175,7 @@ class TestAssistEndpoint:
         assert data['status'] == 'success'
         assert data['session_id'] == 'test-session-123'
         assert 'instruction_id' in data
-        assert data['step_text'] == 'Locate the 8-pin PDU cable'
+        assert data['instruction_steps'] == ['Locate the 8-pin PDU cable']
         assert data['target_id'] == 'J_PWR_1'
         assert data['haptic_cue'] == 'guide_to_target'
         
