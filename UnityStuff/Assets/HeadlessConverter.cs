@@ -1,11 +1,11 @@
 using UnityEngine;
 using System.IO;
-using System;                // Required for Base64 conversion
-using System.Text;           // REQUIRED for encoding JSON
-using System.Collections;    // Required for Coroutines
-using UnityEngine.Networking; // REQUIRED for network requests
-using Meta.XR;    // Required for PassthroughCameraAccess
-using TMPro;                 // Optional: for debug text
+using System;
+using System.Text;
+using System.Collections;
+using UnityEngine.Networking;
+using Meta.XR; // This was the one you were missing
+using TMPro;
 
 // This script now assumes you have an OVRPermissionsRequester
 // component somewhere in your scene to handle the permission pop-up.
@@ -26,26 +26,19 @@ public class HeadlessConverter : MonoBehaviour
 
     private bool isRequestPending = false;
 
-    // A simple class to format our JSON payload
-    [System.Serializable]
-    private class ImagePayload
-    {
-        public string image;
-    }
+    // --- We no longer need the ImagePayload class ---
 
     /// <summary>
     /// Call this from your button's OnClick event.
     /// </summary>
     public void TakeSnapshotAndUpload()
     {
-        // Prevent multiple requests
         if (isRequestPending)
         {
             Log("Cannot start new request; one is already pending.");
             return;
         }
 
-        // --- 1. Run All Safety Checks ---
         if (passthroughAccess == null)
         {
             Log("Error: PassthroughCameraAccess component is not assigned!");
@@ -59,9 +52,6 @@ public class HeadlessConverter : MonoBehaviour
 
         Log("Checks passed. Getting texture...");
 
-        // --- 2. Get the Texture (The Simple Way) ---
-        // GetTexture() returns the Texture2D that the component is already managing.
-        // We just need to cast it from Texture to Texture2D.
         Texture2D sourceTexture = passthroughAccess.GetTexture() as Texture2D;
 
         if (sourceTexture == null)
@@ -73,9 +63,6 @@ public class HeadlessConverter : MonoBehaviour
         Log("Got texture. Encoding to JPG...");
 
         // --- 3. Encode the Texture2D Directly to JPG ---
-        // This is a synchronous call, but it's fast.
-        // It works because the PassthroughCameraAccess script
-        // already put the pixel data on the CPU.
         byte[] jpgData = sourceTexture.EncodeToJPG(90); // 90% quality
 
         if (jpgData == null)
@@ -84,30 +71,30 @@ public class HeadlessConverter : MonoBehaviour
             return;
         }
 
-        Log("Encoding to Base64...");
+        Log("Encoding complete. Starting upload coroutine...");
 
-        // --- 4. Convert JPG data to Base64 String ---
-        string base64String = Convert.ToBase64String(jpgData);
-
-        Log("Starting upload coroutine...");
-
-        // --- 5. Start the Asynchronous Upload ---
-        StartCoroutine(UploadBase64Image(base64String));
+        // --- 4. Start the Asynchronous Upload with the raw JPG bytes ---
+        StartCoroutine(UploadJPG(jpgData));
     }
 
-    IEnumerator UploadBase64Image(string base64String)
+    /// <summary>
+    /// This Coroutine sends the raw JPG byte array
+    /// to the Flask server without blocking the main game thread.
+    /// </summary>
+    IEnumerator UploadJPG(byte[] jpgData)
     {
         isRequestPending = true;
 
-        ImagePayload payload = new ImagePayload { image = base64String };
-        string jsonPayload = JsonUtility.ToJson(payload);
-        byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonPayload);
-
+        // --- MODIFIED SECTION ---
+        // We don't create JSON. We send the raw bytes directly.
         using (UnityWebRequest www = new UnityWebRequest(flaskEndpointUrl, "POST"))
         {
-            www.uploadHandler = new UploadHandlerRaw(bodyRaw);
+            // Set the upload handler to our raw JPG data
+            www.uploadHandler = new UploadHandlerRaw(jpgData);
             www.downloadHandler = new DownloadHandlerBuffer();
-            www.SetRequestHeader("Content-Type", "application/json");
+
+            // Set the content type header so Flask knows to expect a JPG
+            www.SetRequestHeader("Content-Type", "image/jpeg");
 
             Log("Sending data to server...");
             yield return www.SendWebRequest();
