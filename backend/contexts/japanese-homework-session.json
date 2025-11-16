@@ -1,0 +1,23 @@
+{
+  "session_id": "japanese-homework-session",
+  "timestamp": "2025-11-16T03:41:53.725022",
+  "task": "Japanese Homework",
+  "step": "1",
+  "gaze_vector": {
+    "x": 0.0,
+    "y": 0.0,
+    "z": 1.0
+  },
+  "image_analysis": "The image displays a Japanese homework page with multiple sections. Sections 1, 2, and 3 have some pre-filled answers or examples. The user's gaze is centered on the page, and the task is 'Japanese Homework' at 'Current Step: 1'.",
+  "instruction": {
+    "steps": [
+      "Locate section 4, titled 'Answer the questions about yourself' at the bottom of the page.",
+      "Read question 'a. \u307e\u3044\u306b\u3061 \u3042\u3055\u3054\u306f\u3093\u3092 \u305f\u3079\u307e\u3059\u304b\u3002' which asks 'Do you eat breakfast every day?'.",
+      "Write your answer in Japanese on the line provided for question 'a'.",
+      "Proceed to read and answer questions 'b', 'c', and 'd' in the same manner."
+    ],
+    "target_id": "",
+    "haptic_cue": "guide_to_target"
+  },
+  "error": null
+}

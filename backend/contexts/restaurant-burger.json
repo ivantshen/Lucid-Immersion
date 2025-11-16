@@ -1,0 +1,23 @@
+{
+  "session_id": "restaurant-burger",
+  "timestamp": "2025-11-16T01:35:53.032916",
+  "task": "Burger",
+  "step": "1",
+  "gaze_vector": {
+    "x": 0.0,
+    "y": 0.0,
+    "z": 1.0
+  },
+  "image_analysis": "The user's view shows a burger with bacon, cheese, lettuce, tomato, and onion, served open-faced on a bun. Accompanying the burger are small bowls of ketchup and mustard, a pickle spear, and a side salad. The user appears to be focused on the main burger plate.",
+  "instruction": {
+    "steps": [
+      "Place the top bun onto the burger patty to assemble it.",
+      "Add ketchup and mustard from the small bowls to your burger or plate as desired.",
+      "Pick up the assembled burger.",
+      "Take a bite and enjoy your meal."
+    ],
+    "target_id": "",
+    "haptic_cue": "guide_to_target"
+  },
+  "error": null
+}

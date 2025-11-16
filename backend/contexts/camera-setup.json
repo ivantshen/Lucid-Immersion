@@ -1,0 +1,35 @@
+{
+  "session_id": "camera-setup",
+  "timestamp": "2025-11-16T03:52:54.217334",
+  "task": "Camera",
+  "step": "1",
+  "gaze_vector": {
+    "x": 0.0,
+    "y": 0.0,
+    "z": 1.0
+  },
+  "image_analysis": "The scene displays a ceiling-mounted Panasonic 4K PTZ camera system with its lens and an upper control unit. Several cables are connected to the control unit, which also shows green indicator lights. The user's gaze is centered on this camera system.",
+  "instruction": {
+    "steps": [
+      "Confirm you are viewing the Panasonic 4K camera system mounted on the ceiling.",
+      "Locate the indicator lights on the upper control unit and verify they are illuminated, indicating power.",
+      "Visually inspect the cables connected to the control unit to ensure they are securely plugged in."
+    ],
+    "target_id": "",
+    "haptic_cue": "none"
+  },
+  "error": null,
+  "follow_up_qa": [
+    {
+      "timestamp": "2025-11-16T03:53:21.585485Z",
+      "question": "What if the device fails to turn on?",
+      "answer_steps": [
+        "1. Confirm that the indicator lights on the upper control unit are completely off, indicating no power.",
+        "Double-check that all power cables are securely plugged into both the control unit and the power outlet.",
+        "Verify that the power outlet is active by plugging in another device or checking for a tripped circuit breaker.",
+        "Locate and ensure any main power switch on the camera system or its associated power supply unit is in the 'On' position.",
+        "If the device still fails to power on after these steps, professional technical support may be required."
+      ]
+    }
+  ]
+}

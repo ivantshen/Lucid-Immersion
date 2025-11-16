@@ -1,0 +1,34 @@
+{
+  "session_id": "meta-quest-3-analysis",
+  "timestamp": "2025-11-16T03:54:21.953914",
+  "task": "Man Using Meta Quest 3",
+  "step": "1",
+  "gaze_vector": {
+    "x": 0.0,
+    "y": 0.0,
+    "z": 1.0
+  },
+  "image_analysis": "The user is wearing a Meta Quest 3 headset and holding both controllers. He appears engaged, looking straight ahead into the virtual environment. The headset and controllers are correctly positioned, indicating readiness for interaction.",
+  "instruction": {
+    "steps": [
+      "Ensure the Meta Quest 3 headset is comfortably and securely positioned on your head for the clearest view.",
+      "Confirm both controllers are powered on and connected to the headset.",
+      "Look straight ahead to locate the main menu or home environment within the headset.",
+      "Use the trigger button on your right controller to select an option from the main menu."
+    ],
+    "target_id": "",
+    "haptic_cue": "none"
+  },
+  "error": null,
+  "follow_up_qa": [
+    {
+      "timestamp": "2025-11-16T03:54:39.696240Z",
+      "question": "What if the user is Asian?",
+      "answer_steps": [
+        "1. The user's ethnicity, including being Asian, does not change the technical steps or instructions for setting up and using the Meta Quest 3.",
+        "The previous instructions regarding headset comfort, controller connection, and menu navigation are universally applicable to all users.",
+        "Please continue to follow the steps provided to ensure your Meta Quest 3 is set up correctly and you can interact with the virtual environment."
+      ]
+    }
+  ]
+}

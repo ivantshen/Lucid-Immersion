@@ -1,4 +1,6 @@
 import base64
+import os
+import json
 from datetime import datetime
 from typing import TypedDict, List, Optional, Annotated
 import operator
@@ -8,19 +10,26 @@ from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 
 class VRContextState(TypedDict):
     """State for VR context information"""
+    # Input fields
     current_image: Optional[str]  # base64 encoded image
-    current_timestamp: Optional[str]
+    task_step: Optional[str]
+    current_task: Optional[str]
+    gaze_vector: Optional[dict]  # {"x": float, "y": float, "z": float}
+    session_id: Optional[str]
 
-    # Image analysis
-    scene_description: Optional[str]
-    detected_objects: Optional[list]
-    user_action: Optional[str]
+    # Intermediate fields
+    image_analysis: Optional[str]
 
-    context_history: Annotated[List[dict], operator.add] # Accumulate context over time
+    # Output fields
+    instruction_text: Optional[List[str]]  # List of instruction steps
+    target_id: Optional[str]
+    haptic_cue: Optional[str]
 
-    #LLm instruction and output
-    user_query: Optional[str]
-    llm_response: Optional[str]
+    # Context history
+    context_history: Annotated[List[dict], operator.add]  # Accumulate context over time
+    
+    # Messages for LangGraph
+    messages: Optional[List]
 
 class VRContextWorkflow:
     """
@@ -39,108 +48,86 @@ class VRContextWorkflow:
         self.llm = ChatGoogleGenerativeAI(
             model="gemini-2.5-flash",
             google_api_key=api_key,
-            max_tokens=1024,
-            temperature=0.2
+            max_tokens=4096,
+            temperature=0.2,
+            response_mime_type="application/json"
         )
         self.max_context_history = max_context_history
-        self.workflow = self._build_workflow()
+        self.workflow = self.build_workflow()
 
-    def _build_workflow(self) -> StateGraph:
+    def build_workflow(self) -> StateGraph:
         """Build the LangGraph workflow"""
 
         workflow = StateGraph(VRContextState)
 
         # Add nodes and edges to the workflow as needed
-        workflow.add_node("analyze_image", self.analyze_image)
-        workflow.add_node("store_context", self.store_context)
-        workflow.add_node("generate_response", self.generate_response)
+        workflow.add_node("analyze_and_instruct", self.analyze_and_instruct)
+        workflow.add_node("save_context", self.save_context)
 
-        workflow.set_entry_point("analyze_image")
-        workflow.add_edge("analyze_image", "store_context")
-        workflow.add_edge("store_context", "generate_response")
-        workflow.add_edge("generate_response", END)
+        workflow.set_entry_point("analyze_and_instruct")
+        workflow.add_edge("analyze_and_instruct", "save_context")
+        workflow.add_edge("save_context", END)
 
         return workflow.compile()
 
-
-    def analyze_image(self, state: VRContextState) -> VRContextState:
-        """
-        Node to analyze the image using Claude's vision capabilities
-        """
-        try:
-            if state.get("error"):
-                return state
-            
-            image_data = state["current_image"]
-            
-            # Create vision prompt
-            messages = [
-                HumanMessage(
-                    content=[
-                        {
-                            "type": "image",
-                            "source": {
-                                "type": "base64",
-                                "media_type": "image/jpeg",
-                                "data": image_data,
-                            },
-                        },
-                        {
-                            "type": "text",
-                            "text": """Analyze this VR headset view and provide:
-                                1. **A detailed scene description**
-                                2. **List of detected objects and their locations**
-                                3. **What the user appears to be doing or interacting with**
-
-                                Format your response as:
-                                SCENE: <description>
-                                OBJECTS: <comma-separated list>
-                                ACTION: <user action>"""
-                        }
-                    ]
-                )
-            ]
-            
-            response = self.llm.invoke(messages)
-            analysis = response.content
-            
-            # Parse the analysis
-            lines = analysis.split('\n')
-            for line in lines:
-                if line.startswith('SCENE:'):
-                    state["scene_description"] = line.replace('SCENE:', '').strip()
-                elif line.startswith('OBJECTS:'):
-                    objects = line.replace('OBJECTS:', '').strip()
-                    state["detected_objects"] = [obj.strip() for obj in objects.split(',')]
-                elif line.startswith('ACTION:'):
-                    state["user_action"] = line.replace('ACTION:', '').strip()
-            
-            return state
-        except Exception as e:
-            state["error"] = f"Image analysis failed: {str(e)}"
-            return state
     
-    def store_context(self, state: VRContextState) -> VRContextState:
+    def save_context(self, state: VRContextState) -> VRContextState:
         """
-        Node to store the analyzed context with timestamp
+        Node to save the context to JSON file
         """
         try:
             if state.get("error"):
                 return state
             
-            # Create context entry
-            context_entry = {
-                "timestamp": state["current_timestamp"],
-                "scene": state.get("scene_description", ""),
-                "objects": state.get("detected_objects", []),
-                "action": state.get("user_action", ""),
+            import os
+            import json
+            
+            # Create context data
+            instruction_text = state.get("instruction_text", [])
+            # Ensure it's always a list
+            if isinstance(instruction_text, str):
+                instruction_text = [instruction_text]
+            
+            session_id = state.get("session_id", "unknown")
+            task_step = state.get("task_step", "unknown")
+            
+            context_data = {
+                "session_id": session_id,
+                "timestamp": datetime.utcnow().isoformat(),
+                "task": state.get("current_task", ""),
+                "step": task_step,
+                "gaze_vector": state.get("gaze_vector", {}),
+                "image_analysis": state.get("image_analysis", ""),
+                "instruction": {
+                    "steps": instruction_text,  # Now a list
+                    "target_id": state.get("target_id", ""),
+                    "haptic_cue": state.get("haptic_cue", "none")
+                },
+                "error": state.get("error", None)
             }
             
-            # Initialize context_history if it doesn't exist
+            # Ensure contexts directory exists
+            os.makedirs("contexts", exist_ok=True)
+            
+            # Save to file
+            filepath = f"contexts/{session_id}.json"
+            with open(filepath, "w") as f:
+                json.dump(context_data, f, indent=2)
+            
+            print(f"Context saved: {filepath}")
+            
+            # Also update context_history for in-memory tracking
+            context_entry = {
+                "timestamp": datetime.utcnow().isoformat(),
+                "task": state.get("current_task", ""),
+                "step": task_step,
+                "image_analysis": state.get("image_analysis", ""),
+                "step_text": state.get("instruction_text", ""),
+            }
+            
             if "context_history" not in state:
                 state["context_history"] = []
             
-            # Add to history
             state["context_history"].append(context_entry)
             
             # Trim history if needed
@@ -148,52 +135,178 @@ class VRContextWorkflow:
                 state["context_history"] = state["context_history"][-self.max_context_history:]
             
             return state
+            
         except Exception as e:
-            state["error"] = f"Context storage failed: {str(e)}"
+            state["error"] = f"Context save failed: {str(e)}"
             return state
         
-    def generate_response(self, state: VRContextState) -> VRContextState:
+    def analyze_and_instruct(self, state: VRContextState) -> VRContextState:
         """
-        Node to generate LLM response based on user query and context
+        Combined node: Analyze image and generate instruction in one LLM call
         """
         try:
             if state.get("error"):
-                state["llm_response"] = f"Error occurred: {state['error']}"
                 return state
             
-            # Build context summary
-            context_summary = self._build_context_summary(state["context_history"])
+            image_data = state.get("current_image")
+            if not image_data:
+                state["error"] = "No image data provided"
+                state["image_analysis"] = "Error: No image data"
+                state["instruction_text"] = "Error: No image to analyze"
+                state["target_id"] = ""
+                state["haptic_cue"] = "none"
+                return state
             
-            # Create system message with context
-            system_message = f"""You are an AI assistant integrated with a VR headset. You have access to the user's visual context over time.
-                Current Context:
-                {context_summary}
+            task = state.get("current_task", "Unknown task")
+            step = state.get("task_step", "Unknown step")
+            gaze = state.get("gaze_vector", {})
+            
+            # Combined prompt - FIXED to match parsing
+            prompt = f"""You are an AR assistance system analyzing a user's view.
 
-                Current Situation:
-                - Scene: {state.get('scene_description', 'Unknown')}
-                - Objects: {', '.join(state.get('detected_objects', []))}
-                - User Action: {state.get('user_action', 'Unknown')}
-                - Time: {state.get('current_timestamp', 'Unknown')}
+    Task: {task}
+    Current Step: {step}
+    Gaze Direction: {gaze}
+
+    First, analyze what you see in the image:
+    - What objects/components are visible?
+    - What is the user focused on?
+    - Any issues or points of confusion?
+
+    Then, provide step-by-step instructions for this task.
+
+    Respond in this EXACT JSON format:
+    {{
+    "image_analysis": "Brief analysis of the scene (2-3 sentences)",
+    "instruction": {{
+        "steps": [
+            "First instruction step",
+            "Second instruction step",
+            "Third instruction step"
+        ],
+        "target_id": "component ID if applicable, otherwise empty string",
+        "haptic_cue": "guide_to_target | success_pulse | none"
+    }}
+    }}
+    
+    Provide 2-5 clear, actionable instruction steps.
+    Respond ONLY with valid JSON."""
+            
+            # Create multimodal message
+            message = HumanMessage(
+                content=[
+                    {"type": "text", "text": prompt},
+                    {
+                        "type": "image_url",
+                        "image_url": f"data:image/jpeg;base64,{image_data}"
+                    }
+                ]
+            )
+            
+            print(f"DEBUG - Processing image for task: {task}, step: {step}")
+            
+            # Invoke with retry
+            max_retries = 2
+            for attempt in range(max_retries):
+                try:
+                    response = self.llm.invoke([message])
+                    print(f"DEBUG - Response received: {len(response.content)} chars")
+                    break
+                except Exception as e:
+                    print(f"ERROR - Attempt {attempt + 1} failed: {e}")
+                    if attempt < max_retries - 1:
+                        import time
+                        time.sleep(2)
+                    else:
+                        raise
+            
+            # Parse JSON response
+            import json
+            import re
+            
+            try:
+                content = response.content.strip()
                 
-                Provide helpful, context-aware assistance based on what the user is seeing and doing."""
-
-            # Get user query or use default
-            user_query = state.get("user_query", "What should I do next?")
+                print(f"DEBUG - Raw response: {content[:300]}")  # Show first 300 chars
+                
+                # Extract JSON if wrapped in markdown
+                if "```" in content:
+                    start_idx = content.find('{')
+                    end_idx = content.rfind('}')
+                    if start_idx != -1 and end_idx != -1:
+                        content = content[start_idx:end_idx + 1]
+                        print(f"DEBUG - Extracted JSON from markdown")
+                
+                result = json.loads(content)
+                print(f"DEBUG - Parsed JSON successfully")
+                print(f"DEBUG - Keys in result: {result.keys()}")
+                
+            except (json.JSONDecodeError, AttributeError) as e:
+                print(f"ERROR - JSON parsing failed: {e}")
+                print(f"ERROR - Content: {content[:500]}")
+                
+                # Fallback
+                result = {
+                    "image_analysis": "Error parsing analysis",
+                    "step_text": "Unable to process image. Please try again.",
+                    "target_id": "",
+                    "haptic_cue": "none"
+                }
             
-            messages = [
-                SystemMessage(content=system_message),
-                HumanMessage(content=user_query)
-            ]
+            # Validate and set state - FIXED to use step_text
+            valid_cues = ["guide_to_target", "success_pulse", "none"]
             
-            response = self.llm.invoke(messages)
-            state["llm_response"] = response.content
+            state["image_analysis"] = result.get("image_analysis", "No analysis available")
+            
+            # Handle nested instruction object
+            instruction = result.get("instruction", {})
+            if isinstance(instruction, dict):
+                # Get steps as a list
+                steps = instruction.get("steps", [])
+                if isinstance(steps, list) and len(steps) > 0:
+                    state["instruction_text"] = steps  # Store as list
+                else:
+                    # Fallback to text field if steps not provided
+                    text = instruction.get("text", "No instruction available")
+                    state["instruction_text"] = [text] if isinstance(text, str) else ["No instruction available"]
+                
+                state["target_id"] = instruction.get("target_id", "")
+                state["haptic_cue"] = instruction.get("haptic_cue", "none")
+            else:
+                # Fallback for flat structure
+                text = result.get("instruction_text", "No instruction available")
+                state["instruction_text"] = [text] if isinstance(text, str) else ["No instruction available"]
+                state["target_id"] = result.get("target_id", "")
+                state["haptic_cue"] = result.get("haptic_cue", "none")
+            
+            if state["haptic_cue"] not in valid_cues:
+                state["haptic_cue"] = "none"
+            
+            # Store messages
+            if "messages" not in state or state["messages"] is None:
+                state["messages"] = []
+            state["messages"].append(message)
+            state["messages"].append(response)
+            
+            print(f"DEBUG - Analysis: {state['image_analysis'][:100] if state['image_analysis'] else 'None'}...")
+            print(f"DEBUG - Instruction: {state['instruction_text']}")
+            print(f"DEBUG - Target ID: {state['target_id']}")
+            print(f"DEBUG - Haptic: {state['haptic_cue']}")
             
             return state
+            
         except Exception as e:
-            state["error"] = f"Response generation failed: {str(e)}"
-            state["llm_response"] = f"Error: {str(e)}"
+            error_msg = f"Analysis and instruction failed: {str(e)}"
+            state["error"] = error_msg
+            state["image_analysis"] = f"Error: {str(e)}"
+            state["instruction_text"] = "System error. Please try again."
+            state["target_id"] = ""
+            state["haptic_cue"] = "none"
+            print(f"ERROR - {error_msg}")
+            import traceback
+            traceback.print_exc()
             return state
-        
+    
     def _build_context_summary(self, context_history: List[dict]) -> str:
         """Build a summary of recent context history"""
         if not context_history:
@@ -208,24 +321,43 @@ class VRContextWorkflow:
         
         return "\n".join(summary_lines)
         
-    def run(self, image_base64: str, user_query: Optional[str] = None) -> dict:
+    def run(self, image_base64: str, task_step: str, current_task: str, 
+            gaze_vector: dict, session_id: str) -> dict:
         """
-        Run the workflow with a new image
+        Run the workflow with a new AR assistance request.
+        
+        This is the main entry point for processing AR assistance requests.
+        It creates the initial state, runs the workflow, and returns the result.
         
         Args:
             image_base64: Base64 encoded image from VR headset
-            user_query: Optional user query for context-aware response
+            task_step: Current step in the task (e.g., "4")
+            current_task: Name/ID of the current task (e.g., "PSU_Install")
+            gaze_vector: User's gaze direction {"x": float, "y": float, "z": float}
+            session_id: Session identifier for context persistence
             
         Returns:
-            Final state with LLM response
+            Final state dict with:
+                - instruction_text: Generated instruction
+                - target_id: Component to highlight
+                - haptic_cue: Haptic feedback type
+                - session_id: Session identifier
+                - error: Error message if something went wrong
         """
+        # Create initial state
         initial_state = {
             "current_image": image_base64,
-            "user_query": user_query,
+            "task_step": task_step,
+            "current_task": current_task,
+            "gaze_vector": gaze_vector,
+            "session_id": session_id,
             "context_history": [],
+            "messages": []
         }
         
+        # Run workflow
         result = self.workflow.invoke(initial_state)
+        
         return result
     
 # Example usage and testing
