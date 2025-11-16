@@ -22,6 +22,16 @@ public class HeadlessConverter : MonoBehaviour
     [Tooltip("The API key for your backend service")]
     public string apiKey = "my-super-secret-key-12345"; // Set this in the Inspector
 
+    [Header("UI Display")]
+    [Tooltip("Text element to display the image analysis (header)")]
+    public TMP_Text headerText;
+    
+    [Tooltip("Text element to display timestamp and step (subheader)")]
+    public TMP_Text subheaderText;
+    
+    [Tooltip("Text element to display instruction steps (main content)")]
+    public TMP_Text instructionText;
+    
     [Header("Optional Debugging")]
     [Tooltip("Optional: A text element for status updates")]
     public TMP_Text debugStatusText;
@@ -38,8 +48,6 @@ public class HeadlessConverter : MonoBehaviour
     [Tooltip("Assign the OVRCameraRig's CenterEyeAnchor here")]
     public Transform centerEyeAnchor; // Assign this in the Inspector
 
-    // --- We no longer need the 'Controller Input' header or 'aButtonAction' ---
-    [SerializeField] private TMP_Text outPutResponse;
     private bool isRequestPending = false;
     private string sessionId = "";
 
@@ -197,15 +205,17 @@ public class HeadlessConverter : MonoBehaviour
                 try
                 {
                     string responseText = www.downloadHandler.text;
-                    Log("Response: " + responseText);
-                    outPutResponse.text = responseText;
-
-                    // You can parse the JSON here to extract instruction_steps, target_id, haptic_cue
-                    // Example: AssistResponse response = JsonUtility.FromJson<AssistResponse>(responseText);
+                    Log("Raw response: " + responseText);
+                    
+                    AssistResponse response = JsonUtility.FromJson<AssistResponse>(responseText);
+                    
+                    // Display the structured response
+                    DisplayStructuredResponse(response, response.image_analysis, response.timestamp);
                 }
                 catch (Exception e)
                 {
                     Log("Error parsing response: " + e.Message);
+                    DisplayError("Failed to parse server response: " + e.Message);
                 }
             }
             else
@@ -238,6 +248,86 @@ public class HeadlessConverter : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Display the response in a structured format
+    /// Header: Image Analysis
+    /// Subheader: Timestamp and Step
+    /// Content: Instruction steps as a list
+    /// </summary>
+    void DisplayStructuredResponse(AssistResponse response, string imageAnalysis, string timestamp)
+    {
+        // Header: Image Analysis
+        if (headerText != null)
+        {
+            headerText.text = imageAnalysis;
+        }
+        
+        // Subheader: Timestamp and Step
+        if (subheaderText != null)
+        {
+            string stepInfo = $"Step {response.instruction_id.Split('-')[^1]} | {FormatTimestamp(timestamp)}";
+            subheaderText.text = stepInfo;
+        }
+        
+        // Main Content: Instruction Steps as a numbered list
+        if (instructionText != null)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine("Instructions:");
+            sb.AppendLine();
+            
+            for (int i = 0; i < response.instruction_steps.Length; i++)
+            {
+                sb.AppendLine($"{i + 1}. {response.instruction_steps[i]}");
+                if (i < response.instruction_steps.Length - 1)
+                {
+                    sb.AppendLine();
+                }
+            }
+            
+            instructionText.text = sb.ToString();
+        }
+        
+        Log("Response displayed successfully");
+    }
+    
+    /// <summary>
+    /// Display error message in the UI
+    /// </summary>
+    void DisplayError(string errorMessage)
+    {
+        if (headerText != null)
+        {
+            headerText.text = "Error";
+        }
+        
+        if (subheaderText != null)
+        {
+            subheaderText.text = DateTime.Now.ToString("HH:mm:ss");
+        }
+        
+        if (instructionText != null)
+        {
+            instructionText.text = errorMessage;
+        }
+    }
+    
+    /// <summary>
+    /// Format timestamp to a readable format
+    /// </summary>
+    string FormatTimestamp(string isoTimestamp)
+    {
+        try
+        {
+            DateTime dt = DateTime.Parse(isoTimestamp);
+            return dt.ToString("MMM dd, HH:mm:ss");
+        }
+        catch
+        {
+            return DateTime.Now.ToString("MMM dd, HH:mm:ss");
+        }
+    }
+
     // Helper for logging to UI and Console
     void Log(string message)
     {
@@ -249,7 +339,7 @@ public class HeadlessConverter : MonoBehaviour
     }
 }
 
-// Optional: Response data structure for parsing JSON response
+// Response data structure for parsing JSON response from backend
 [System.Serializable]
 public class AssistResponse
 {
@@ -259,4 +349,6 @@ public class AssistResponse
     public string[] instruction_steps;
     public string target_id;
     public string haptic_cue;
+    public string image_analysis;
+    public string timestamp;
 }

@@ -124,7 +124,9 @@ def register_assist_route(app):
                 'instruction_id': f"{session_id}-{task_step}",
                 'instruction_steps': instruction_text,  # Now a list of steps
                 'target_id': result.get('target_id', ''),
-                'haptic_cue': result.get('haptic_cue', 'none')
+                'haptic_cue': result.get('haptic_cue', 'none'),
+                'image_analysis': result.get('image_analysis', ''),  # Add image analysis
+                'timestamp': datetime.utcnow().isoformat() + 'Z'  # Add timestamp
             }
             
             # 12. Log completion
