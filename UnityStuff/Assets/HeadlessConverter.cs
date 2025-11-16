@@ -18,7 +18,7 @@ public class HeadlessConverter : MonoBehaviour
 
     [Header("Networking")]
     [Tooltip("The full URL of your Flask endpoint")]
-    public string flaskEndpointUrl = "http://YOUR_SERVER_IP:5000/assist";
+    public string flaskEndpointUrl = "https://backend-api-141904499148.us-central1.run.app/assist";
 
     [Header("Optional Debugging")]
     [Tooltip("Optional: A text element for status updates")]
