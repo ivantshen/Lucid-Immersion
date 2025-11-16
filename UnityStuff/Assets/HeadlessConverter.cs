@@ -18,20 +18,67 @@ public class HeadlessConverter : MonoBehaviour
 
     [Header("Networking")]
     [Tooltip("The full URL of your Flask endpoint")]
-    public string flaskEndpointUrl = "https://backend-api-141904499148.us-central1.run.app/assist";
+    public string flaskEndpointUrl = "[https://backend-api-141904499148.us-central1.run.app/assist](https://backend-api-141904499148.us-central1.run.app/assist)";
+    [Tooltip("The API key for your backend service")]
+    public string apiKey = "YOUR_API_KEY_HERE"; // Set this in the Inspector
 
     [Header("Optional Debugging")]
     [Tooltip("Optional: A text element for status updates")]
     public TMP_Text debugStatusText;
 
+    [Header("Task Context")]
+    [Tooltip("The current high-level task the user is performing")]
+    public string currentTask = "default_task"; // You can change this
+    [Tooltip("The current step number within the task")]
+    public int taskStep = 0; // You can change this
+
+    [Header("Gaze Tracking")]
+    [Tooltip("Enable sending gaze data to the server")]
+    public bool sendGazeData = true;
+    [Tooltip("Assign the OVRCameraRig's CenterEyeAnchor here")]
+    public Transform centerEyeAnchor; // Assign this in the Inspector
+
     private bool isRequestPending = false;
     private string sessionId = "";
+
+    // A simple class to format our JSON payload
+    [System.Serializable]
+    private class ImagePayload
+    {
+        public string image;
+    }
 
     void Start()
     {
         // Generate a session ID when the app starts
         sessionId = System.Guid.NewGuid().ToString();
         Log($"Session ID: {sessionId}");
+
+        // --- RECOMMENDED ---
+        // Auto-find the CenterEyeAnchor if it's not set
+        if (sendGazeData && centerEyeAnchor == null)
+        {
+            try
+            {
+                // Note: This requires the OVRCameraRig to be in the scene
+                centerEyeAnchor = FindObjectOfType<OVRCameraRig>().centerEyeAnchor;
+                if (centerEyeAnchor != null)
+                {
+                    Log("Automatically found CenterEyeAnchor.");
+                }
+                else
+                {
+                    Log("Could not find CenterEyeAnchor. Disabling gaze data.");
+                    sendGazeData = false;
+                }
+            }
+            catch (Exception e)
+            {
+                Log($"Error finding CenterEyeAnchor: {e.Message}. Disabling gaze data.");
+                sendGazeData = false;
+            }
+        }
+        // --- END RECOMMENDED ---
     }
 
     /// <summary>
@@ -98,7 +145,7 @@ public class HeadlessConverter : MonoBehaviour
         form.AddBinaryData("snapshot", jpgData, "snapshot.jpg", "image/jpeg");
 
         // Add task context fields
-        form.AddField("task_step", taskStep);
+        form.AddField("task_step", taskStep.ToString()); // <-- FIX IS HERE
         form.AddField("current_task", currentTask);
         form.AddField("session_id", sessionId);
 
@@ -130,7 +177,7 @@ public class HeadlessConverter : MonoBehaviour
                     Log("Response: " + responseText);
 
                     // You can parse the JSON here to extract instruction_steps, target_id, haptic_cue
-                    // Example: JsonUtility.FromJson<ResponseData>(responseText);
+                    // Example: AssistResponse response = JsonUtility.FromJson<AssistResponse>(responseText);
                 }
                 catch (Exception e)
                 {
@@ -157,7 +204,8 @@ public class HeadlessConverter : MonoBehaviour
         if (sendGazeData && centerEyeAnchor != null)
         {
             Vector3 gazeDirection = centerEyeAnchor.forward;
-            return $"{{\"x\": {gazeDirection.x}, \"y\": {gazeDirection.y}, \"z\": {gazeDirection.z}}}";
+            // Using InvariantCulture for consistent decimal formatting
+            return $"{{\"x\": {gazeDirection.x.ToString(System.Globalization.CultureInfo.InvariantCulture)}, \"y\": {gazeDirection.y.ToString(System.Globalization.CultureInfo.InvariantCulture)}, \"z\": {gazeDirection.z.ToString(System.Globalization.CultureInfo.InvariantCulture)}}}";
         }
         else
         {
