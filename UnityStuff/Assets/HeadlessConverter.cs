@@ -4,8 +4,9 @@ using System;
 using System.Text;
 using System.Collections;
 using UnityEngine.Networking;
-using Meta.XR; // This was the one you were missing
+using Meta.XR;
 using TMPro;
+using Oculus.VR; // <-- ADDED THIS
 
 // This script now assumes you have an OVRPermissionsRequester
 // component somewhere in your scene to handle the permission pop-up.
@@ -18,9 +19,9 @@ public class HeadlessConverter : MonoBehaviour
 
     [Header("Networking")]
     [Tooltip("The full URL of your Flask endpoint")]
-    public string flaskEndpointUrl = "[https://backend-api-141904499148.us-central1.run.app/assist](https://backend-api-141904499148.us-central1.run.app/assist)";
+    public string flaskEndpointUrl = "https://backend-api-141904499148.us-central1.run.app/assist";
     [Tooltip("The API key for your backend service")]
-    public string apiKey = "YOUR_API_KEY_HERE"; // Set this in the Inspector
+    public string apiKey = "my-super-secret-key-12345"; // Set this in the Inspector
 
     [Header("Optional Debugging")]
     [Tooltip("Optional: A text element for status updates")]
@@ -37,6 +38,8 @@ public class HeadlessConverter : MonoBehaviour
     public bool sendGazeData = true;
     [Tooltip("Assign the OVRCameraRig's CenterEyeAnchor here")]
     public Transform centerEyeAnchor; // Assign this in the Inspector
+
+    // --- We no longer need the 'Controller Input' header or 'aButtonAction' ---
 
     private bool isRequestPending = false;
     private string sessionId = "";
@@ -82,8 +85,27 @@ public class HeadlessConverter : MonoBehaviour
     }
 
     /// <summary>
-    /// Call this from your button's OnClick event.
+    /// This Update function now checks for the 'A' button press
+    /// using OVRInput from the Meta XR Core SDK.
     /// </summary>
+    void Update()
+    {
+        // Check if the 'A' button (aliased as Button.One) on the right controller
+        // was pressed down this frame.
+        if (OVRInput.GetDown(OVRInput.Button.One))
+        {
+            Log("'A' button pressed. Taking snapshot...");
+            TakeSnapshotAndUpload();
+        }
+
+        // OPTIONAL: If you also want the 'X' button on the left controller:
+        // if (OVRInput.GetDown(OVRInput.Button.Three))
+        // {
+        //     Log("'X' button pressed. Taking snapshot...");
+        //     TakeSnapshotAndUpload();
+        // }
+    }
+
     public void TakeSnapshotAndUpload()
     {
         if (isRequestPending)
@@ -145,7 +167,7 @@ public class HeadlessConverter : MonoBehaviour
         form.AddBinaryData("snapshot", jpgData, "snapshot.jpg", "image/jpeg");
 
         // Add task context fields
-        form.AddField("task_step", taskStep.ToString()); // <-- FIX IS HERE
+        form.AddField("task_step", taskStep.ToString());
         form.AddField("current_task", currentTask);
         form.AddField("session_id", sessionId);
 
