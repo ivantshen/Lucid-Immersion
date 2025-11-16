@@ -6,7 +6,6 @@ using System.Collections;
 using UnityEngine.Networking;
 using Meta.XR;
 using TMPro;
-using Oculus.VR; // <-- ADDED THIS
 
 // This script now assumes you have an OVRPermissionsRequester
 // component somewhere in your scene to handle the permission pop-up.
@@ -40,7 +39,7 @@ public class HeadlessConverter : MonoBehaviour
     public Transform centerEyeAnchor; // Assign this in the Inspector
 
     // --- We no longer need the 'Controller Input' header or 'aButtonAction' ---
-
+    [SerializeField] private TMP_Text outPutResponse;
     private bool isRequestPending = false;
     private string sessionId = "";
 
@@ -81,6 +80,8 @@ public class HeadlessConverter : MonoBehaviour
                 sendGazeData = false;
             }
         }
+        TakeSnapshotAndUpload();
+
         // --- END RECOMMENDED ---
     }
 
@@ -197,6 +198,7 @@ public class HeadlessConverter : MonoBehaviour
                 {
                     string responseText = www.downloadHandler.text;
                     Log("Response: " + responseText);
+                    outPutResponse.text = responseText;
 
                     // You can parse the JSON here to extract instruction_steps, target_id, haptic_cue
                     // Example: AssistResponse response = JsonUtility.FromJson<AssistResponse>(responseText);
