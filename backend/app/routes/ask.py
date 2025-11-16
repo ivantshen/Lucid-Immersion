@@ -84,7 +84,6 @@ def register_ask_route(app):
                 
                 # Save audio file for debugging
                 try:
-                    import os
                     debug_dir = 'test_images'
                     os.makedirs(debug_dir, exist_ok=True)
                     timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
@@ -219,7 +218,6 @@ Be concise, practical, and based on the previous context."""
             })
             
             # Write updated context back to file
-            import os
             from pathlib import Path
             context_path = Path(context_dir) / f"{session_id}.json"
             with open(context_path, 'w') as f:
