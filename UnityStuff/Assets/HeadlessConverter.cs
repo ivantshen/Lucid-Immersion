@@ -28,6 +28,10 @@ public class HeadlessConverter : MonoBehaviour
     [Header("UI Display")]
     [Tooltip("Text element to display the image analysis (header)")]
     public GameObject responsePanel;
+
+    [Tooltip("Canvas Group on the response panel for fading/visibility control")]
+    public CanvasGroup responseCanvasGroup;
+
     public TMP_Text headerText;
 
     [Tooltip("Text element to display timestamp and step (subheader)")]
@@ -115,9 +119,19 @@ public class HeadlessConverter : MonoBehaviour
 
 
         // Ensure the response panel is hidden on start
-        if (responsePanel != null)
+        if (responseCanvasGroup != null) // Check the CanvasGroup instead
         {
+            responseCanvasGroup.alpha = 0f; // Set alpha to 0 to hide it
+            responseCanvasGroup.interactable = false; // Make it non-interactable when hidden
+            responseCanvasGroup.blocksRaycasts = false; // Don't block raycasts when hidden
+            Log("Response panel initialized as hidden (alpha 0).");
+        }
+        else if (responsePanel != null)
+        {
+            // Fallback: If CanvasGroup not assigned, hide the GameObject.
+            // This case should be rare if setup correctly.
             responsePanel.SetActive(false);
+            Log("Warning: responseCanvasGroup not assigned. Hiding responsePanel GameObject directly.");
         }
     }
 
@@ -152,10 +166,29 @@ public class HeadlessConverter : MonoBehaviour
         // 'X' button is OVRInput.Button.Three
         if (OVRInput.GetDown(OVRInput.Button.Three))
         {
-            if (responsePanel != null)
+            if (responseCanvasGroup != null) // Check for the CanvasGroup
             {
-                Log("'X' button pressed. Toggling response window.");
-                // This line toggles the panel's active state
+                Log("'X' button pressed. Toggling response window visibility (alpha).");
+
+                bool isVisible = responseCanvasGroup.alpha > 0.1f; // Check if it's currently mostly visible
+
+                if (isVisible)
+                {
+                    responseCanvasGroup.alpha = 0f; // Make it invisible
+                    responseCanvasGroup.interactable = false;
+                    responseCanvasGroup.blocksRaycasts = false;
+                }
+                else
+                {
+                    responseCanvasGroup.alpha = 1f; // Make it fully visible
+                    responseCanvasGroup.interactable = true;
+                    responseCanvasGroup.blocksRaycasts = true;
+                }
+            }
+            else if (responsePanel != null) // Fallback for direct GameObject toggle
+            {
+                // This branch should ideally not be hit if CanvasGroup is set up.
+                Log("Warning: responseCanvasGroup not assigned. Toggling responsePanel GameObject directly.");
                 responsePanel.SetActive(!responsePanel.activeSelf);
             }
         }
@@ -168,6 +201,9 @@ public class HeadlessConverter : MonoBehaviour
             Log("Cannot start new request; one is already pending.");
             return;
         }
+
+        if (headerText != null) headerText.text = "PROCESSING...";
+        if (instructionText != null) instructionText.text = "";
 
         if (passthroughAccess == null)
         {
@@ -463,7 +499,18 @@ public class HeadlessConverter : MonoBehaviour
     /// </summary>
     void DisplayStructuredResponse(AssistResponse response, string imageAnalysis, string timestamp)
     {
-        if (responsePanel != null) responsePanel.SetActive(true); // <-- ADD THIS
+        // Ensure the panel is visible when new data is displayed
+        if (responseCanvasGroup != null)
+        {
+            responseCanvasGroup.alpha = 1f; // Make it visible
+            responseCanvasGroup.interactable = true;
+            responseCanvasGroup.blocksRaycasts = true;
+        }
+        else if (responsePanel != null)
+        {
+            responsePanel.SetActive(true); // Fallback
+        }
+
         // Header: Image Analysis
         if (headerText != null)
         {
@@ -504,7 +551,18 @@ public class HeadlessConverter : MonoBehaviour
     /// </summary>
     void DisplayError(string errorMessage)
     {
-        if (responsePanel != null) responsePanel.SetActive(true); // <-- ADD THIS
+        // Ensure the panel is visible when new data is displayed
+        if (responseCanvasGroup != null)
+        {
+            responseCanvasGroup.alpha = 1f; // Make it visible
+            responseCanvasGroup.interactable = true;
+            responseCanvasGroup.blocksRaycasts = true;
+        }
+        else if (responsePanel != null)
+        {
+            responsePanel.SetActive(true); // Fallback
+        }
+
 
         if (headerText != null)
         {
