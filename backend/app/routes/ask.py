@@ -55,14 +55,18 @@ def register_ask_route(app):
             question = None
             is_voice_input = False
             
+            # Check if we have form data or files (more flexible than content_type check)
+            has_form_data = len(request.form) > 0 or len(request.files) > 0
+            
             if request.is_json:
                 # Text-only request (backward compatibility)
                 data = request.get_json()
                 session_id = data.get('session_id')
                 question = data.get('question')
                 
-            elif request.content_type and 'multipart/form-data' in request.content_type:
+            elif has_form_data:
                 # Multipart request (potentially with audio)
+                # This works regardless of exact Content-Type header format
                 session_id = request.form.get('session_id')
                 
                 # Check if audio file is provided
