@@ -471,7 +471,6 @@ public class HeadlessConverter : MonoBehaviour
             debugStatusText.text = message;
         }
     }
-}
 
     /// <summary>
     /// Display the response from /ask endpoint (voice question)
