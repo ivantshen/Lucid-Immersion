@@ -84,6 +84,7 @@ def register_ask_route(app):
                 
                 # Save audio file for debugging
                 try:
+                    import os
                     debug_dir = 'test_images'
                     os.makedirs(debug_dir, exist_ok=True)
                     timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')

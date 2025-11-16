@@ -50,13 +50,11 @@ def transcribe_audio(audio_bytes: bytes, content_type: str, language_code: str =
         audio = speech.RecognitionAudio(content=audio_bytes)
         
         # Configure recognition
-        # Note: audio_channel_count=2 allows stereo audio
+        # Let the API auto-detect channel count to support both mono and stereo
         config = speech.RecognitionConfig(
             encoding=get_encoding_from_content_type(content_type),
             language_code=language_code,
             enable_automatic_punctuation=True,
-            audio_channel_count=2,  # Support stereo audio
-            enable_separate_recognition_per_channel=False,  # Merge channels
             model='default',
         )
         
