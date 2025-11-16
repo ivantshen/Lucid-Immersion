@@ -50,9 +50,10 @@ def transcribe_audio(audio_bytes: bytes, content_type: str, language_code: str =
         audio = speech.RecognitionAudio(content=audio_bytes)
         
         # Configure recognition
-        # Let the API auto-detect channel count to support both mono and stereo
+        # Match Unity's audio settings: 16000 Hz sample rate, mono audio
         config = speech.RecognitionConfig(
             encoding=get_encoding_from_content_type(content_type),
+            sample_rate_hertz=16000,  # Match Unity's SAMPLE_RATE constant
             language_code=language_code,
             enable_automatic_punctuation=True,
             model='default',
