@@ -6,10 +6,25 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/AfferenceUnitySDK/ExampleScenes/XRTemplate.unity
-    guid: f2077fe4639cdb94090186233deb8009
+    path: Assets/PassthroughCameraApiSamples/StartScene/StartScene.unity
+    guid: 69e1b31c45bac42f88f75017ee404de1
+  - enabled: 1
+    path: Assets/PassthroughCameraApiSamples/CameraViewer/CameraViewer.unity
+    guid: ad5bb12b10679b840999aa322aa7a491
+  - enabled: 1
+    path: Assets/PassthroughCameraApiSamples/CameraToWorld/CameraToWorld.unity
+    guid: 756785b371a4f49438b7e2148816e892
+  - enabled: 1
+    path: Assets/PassthroughCameraApiSamples/BrightnessEstimation/BrightnessEstimation.unity
+    guid: 8ea13e682474e1748965f8e21972f2b2
+  - enabled: 1
+    path: Assets/PassthroughCameraApiSamples/MultiObjectDetection/MultiObjectDetection.unity
+    guid: 20c230cce46443841b5727b1d6100bfc
+  - enabled: 1
+    path: Assets/PassthroughCameraApiSamples/ShaderSample/ShaderSample.unity
+    guid: 708e8dca6055146b28afe2481f141457
   m_configObjects:
-    com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
-    com.unity.xr.management.loader_settings: {fileID: 11400000, guid: e1065d6b140ecae49af50b8e866323d3, type: 2}
-    com.unity.xr.openxr.settings4: {fileID: 11400000, guid: 4fa39747a955e5c499aef29c603f9e9d, type: 2}
+    Unity.XR.Oculus.Settings: {fileID: 11400000, guid: f2bf97b3acdb64248a707c407c9fc54e, type: 2}
+    com.unity.xr.management.loader_settings: {fileID: 11400000, guid: a971eac5e950046e586c5e153e32d05c, type: 2}
+    com.unity.xr.openxr.settings4: {fileID: 11400000, guid: 9165b3c3dec8d446f9b11d1a99b6e245, type: 2}
   m_UseUCBPForAssetBundles: 0
