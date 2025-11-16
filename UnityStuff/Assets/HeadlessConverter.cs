@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Android;
 using System.IO;
 using System;
 using System.Text;
@@ -25,13 +26,13 @@ public class HeadlessConverter : MonoBehaviour
     [Header("UI Display")]
     [Tooltip("Text element to display the image analysis (header)")]
     public TMP_Text headerText;
-    
+
     [Tooltip("Text element to display timestamp and step (subheader)")]
     public TMP_Text subheaderText;
-    
+
     [Tooltip("Text element to display instruction steps (main content)")]
     public TMP_Text instructionText;
-    
+
     [Header("Optional Debugging")]
     [Tooltip("Optional: A text element for status updates")]
     public TMP_Text debugStatusText;
@@ -47,6 +48,12 @@ public class HeadlessConverter : MonoBehaviour
     public bool sendGazeData = true;
     [Tooltip("Assign the OVRCameraRig's CenterEyeAnchor here")]
     public Transform centerEyeAnchor; // Assign this in the Inspector
+
+    //Audio variables
+    private AudioClip recording;
+    private bool isRecording = false;
+    private const int MAX_RECORD_TIME_SEC = 10;
+    private const int SAMPLE_RATE = 44100;
 
     private bool isRequestPending = false;
     private string sessionId = "";
@@ -88,7 +95,19 @@ public class HeadlessConverter : MonoBehaviour
                 sendGazeData = false;
             }
         }
-        TakeSnapshotAndUpload();
+        string microphonePermission = "android.permission.RECORD_AUDIO";
+
+        // Check for permission using the Android.Permission class
+        if (!Permission.HasUserAuthorizedPermission(microphonePermission))
+        {
+            Log("Microphone permission not granted. Requesting...");
+            // Make sure your OVRPermissionsRequester component in the scene
+            // is set up to request this permission!
+        }
+        else
+        {
+            Log("Microphone permission is already granted.");
+        }
 
         // --- END RECOMMENDED ---
     }
@@ -107,12 +126,20 @@ public class HeadlessConverter : MonoBehaviour
             TakeSnapshotAndUpload();
         }
 
-        // OPTIONAL: If you also want the 'X' button on the left controller:
-        // if (OVRInput.GetDown(OVRInput.Button.Three))
-        // {
-        //     Log("'X' button pressed. Taking snapshot...");
-        //     TakeSnapshotAndUpload();
-        // }
+        // --- "B" Button for Audio Recording ---
+        // B button is 'OVRInput.Button.Two'
+
+        // Start recording when B is pressed
+        if (OVRInput.GetDown(OVRInput.Button.Two) && !isRecording)
+        {
+            StartRecording();
+        }
+
+        // Stop recording when B is released
+        if (OVRInput.GetUp(OVRInput.Button.Two) && isRecording)
+        {
+            StopAndUploadRecording();
+        }
     }
 
     public void TakeSnapshotAndUpload()
@@ -206,9 +233,9 @@ public class HeadlessConverter : MonoBehaviour
                 {
                     string responseText = www.downloadHandler.text;
                     Log("Raw response: " + responseText);
-                    
+
                     AssistResponse response = JsonUtility.FromJson<AssistResponse>(responseText);
-                    
+
                     // Display the structured response
                     DisplayStructuredResponse(response, response.image_analysis, response.timestamp);
                 }
@@ -248,6 +275,83 @@ public class HeadlessConverter : MonoBehaviour
         }
     }
 
+    // AUDIO METHODS
+    void StartRecording()
+    {
+        if (Microphone.devices.Length == 0)
+        {
+            Log("No microphone found!");
+            return;
+        }
+
+        Log("Starting audio recording...");
+        isRecording = true;
+        // Start recording from the default mic, loop for MAX_RECORD_TIME_SEC, at SAMPLE_RATE
+        recording = Microphone.Start(null, true, MAX_RECORD_TIME_SEC, SAMPLE_RATE);
+    }
+
+    void StopAndUploadRecording()
+    {
+        Log("Stopping audio recording...");
+        isRecording = false;
+
+        // Stop the microphone
+        Microphone.End(null); // 'null' for the default mic
+
+        // Use our WavUtility to convert the AudioClip to a .wav byte array
+        byte[] wavData = WavUtility.FromAudioClip(recording);
+
+        if (wavData == null)
+        {
+            Log("Failed to create .wav data.");
+            return;
+        }
+
+        Log("Audio converted to .wav. Starting upload...");
+        // Start a new coroutine to upload the audio
+        StartCoroutine(UploadAudioData(wavData));
+    }
+
+    IEnumerator UploadAudioData(byte[] audioData)
+    {
+        isRequestPending = true;
+
+        WWWForm form = new WWWForm();
+
+        // Add the audio file. Note the field name is "audio"
+        form.AddBinaryData("audio", audioData, "recording.wav", "audio/wav");
+
+        // Add the same metadata as the snapshot
+        form.AddField("task_step", taskStep.ToString());
+        form.AddField("current_task", currentTask);
+        form.AddField("session_id", sessionId);
+
+        // Create the request
+        using (UnityWebRequest www = UnityWebRequest.Post(flaskEndpointUrl, form))
+        {
+            www.SetRequestHeader("Authorization", "Bearer " + apiKey);
+
+            Log("Sending audio data to server...");
+            yield return www.SendWebRequest();
+
+            isRequestPending = false;
+
+            if (www.result == UnityWebRequest.Result.Success)
+            {
+                Log("SUCCESS: Audio upload complete. Server responded!");
+                Log(www.downloadHandler.text);
+            }
+            else
+            {
+                Log("ERROR: " + www.error);
+                if (www.downloadHandler != null)
+                {
+                    Log("Error details: " + www.downloadHandler.text);
+                }
+            }
+        }
+    }
+
     /// <summary>
     /// Display the response in a structured format
     /// Header: Image Analysis
@@ -261,21 +365,21 @@ public class HeadlessConverter : MonoBehaviour
         {
             headerText.text = imageAnalysis;
         }
-        
+
         // Subheader: Timestamp and Step
         if (subheaderText != null)
         {
             string stepInfo = $"Step {response.instruction_id.Split('-')[^1]} | {FormatTimestamp(timestamp)}";
             subheaderText.text = stepInfo;
         }
-        
+
         // Main Content: Instruction Steps as a numbered list
         if (instructionText != null)
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("Instructions:");
             sb.AppendLine();
-            
+
             for (int i = 0; i < response.instruction_steps.Length; i++)
             {
                 sb.AppendLine($"{i + 1}. {response.instruction_steps[i]}");
@@ -284,13 +388,13 @@ public class HeadlessConverter : MonoBehaviour
                     sb.AppendLine();
                 }
             }
-            
+
             instructionText.text = sb.ToString();
         }
-        
+
         Log("Response displayed successfully");
     }
-    
+
     /// <summary>
     /// Display error message in the UI
     /// </summary>
@@ -300,18 +404,18 @@ public class HeadlessConverter : MonoBehaviour
         {
             headerText.text = "Error";
         }
-        
+
         if (subheaderText != null)
         {
             subheaderText.text = DateTime.Now.ToString("HH:mm:ss");
         }
-        
+
         if (instructionText != null)
         {
             instructionText.text = errorMessage;
         }
     }
-    
+
     /// <summary>
     /// Format timestamp to a readable format
     /// </summary>
