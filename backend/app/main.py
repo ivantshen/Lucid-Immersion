@@ -9,9 +9,21 @@ from flask import Flask, jsonify, request
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage
+
+# Import VRContextWorkflow - handle both local and Docker paths
 import sys
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from llm import VRContextWorkflow
+import os
+# Add parent directory to path for imports
+parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+
+try:
+    from llm import VRContextWorkflow
+except ImportError:
+    # If running from Docker, try absolute import
+    sys.path.insert(0, '/app')
+    from llm import VRContextWorkflow
 
 # Load environment variables
 load_dotenv()
@@ -237,4 +249,6 @@ app = create_app()
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080, debug=(Config.FLASK_ENV != 'production'))
+    # For local development only
+    port = int(os.environ.get('PORT', 8080))
+    app.run(host='0.0.0.0', port=port, debug=(Config.FLASK_ENV != 'production'))

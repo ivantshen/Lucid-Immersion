@@ -1,6 +1,6 @@
 {
   "session_id": "japanese-homework-session",
-  "timestamp": "2025-11-16T03:41:53.725022",
+  "timestamp": "2025-11-16T05:48:23.686517",
   "task": "Japanese Homework",
   "step": "1",
   "gaze_vector": {
@@ -8,16 +8,17 @@
     "y": 0.0,
     "z": 1.0
   },
-  "image_analysis": "The image displays a Japanese homework page with multiple sections. Sections 1, 2, and 3 have some pre-filled answers or examples. The user's gaze is centered on the page, and the task is 'Japanese Homework' at 'Current Step: 1'.",
+  "image_analysis": "The image shows a Japanese homework page with multiple sections. Sections 1-3 contain some completed answers, while section 4, which asks personal questions in Japanese, is entirely blank. The user's gaze is centered on the page, indicating a general focus on the current task.",
   "instruction": {
     "steps": [
-      "Locate section 4, titled 'Answer the questions about yourself' at the bottom of the page.",
-      "Read question 'a. \u307e\u3044\u306b\u3061 \u3042\u3055\u3054\u306f\u3093\u3092 \u305f\u3079\u307e\u3059\u304b\u3002' which asks 'Do you eat breakfast every day?'.",
-      "Write your answer in Japanese on the line provided for question 'a'.",
-      "Proceed to read and answer questions 'b', 'c', and 'd' in the same manner."
+      "Begin by reading question 4a: '\u307e\u3044\u306b\u3061 \u3042\u3055\u3054\u306f\u3093\u3092 \u305f\u3079\u307e\u3059\u304b\u3002' (Do you eat breakfast every day?)",
+      "Formulate your answer in Japanese. For example, '\u306f\u3044\u3001\u305f\u3079\u307e\u3059\u3002' (Yes, I do.) or '\u3044\u3044\u3048\u3001\u305f\u3079\u307e\u305b\u3093\u3002' (No, I don't.)",
+      "Next, read question 4b: '\u306a\u3093\u3088\u3046\u3073\u306b \u3060\u3044\u304c\u304f\u306b \u3044\u304d\u307e\u3059\u304b\u3002' (What day of the week do you go to university?)",
+      "Write your answer for 4b, specifying the day(s) you attend university in Japanese, such as '\u6708\u66dc\u65e5\u306b \u3044\u304d\u307e\u3059\u3002' (I go on Monday.)",
+      "Proceed to answer questions 4c and 4d in Japanese, providing truthful responses about your homework habits and TV watching."
     ],
     "target_id": "",
-    "haptic_cue": "guide_to_target"
+    "haptic_cue": "none"
   },
   "error": null
 }
