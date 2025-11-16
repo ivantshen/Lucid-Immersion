@@ -89,8 +89,16 @@ def test_with_image(image_path: str):
             print(f"\n📋 Result:")
             print(f"   Session ID: {result.get('session_id', 'N/A')}")
             print(f"   Instruction ID: {result.get('instruction_id', 'N/A')}")
-            print(f"\n   📝 Instruction:")
-            print(f"   {result.get('step_text', 'N/A')}")
+            
+            # Display instruction steps
+            instruction_steps = result.get('instruction_steps', [])
+            if isinstance(instruction_steps, list) and len(instruction_steps) > 0:
+                print(f"\n   📝 Instructions:")
+                for i, step in enumerate(instruction_steps, 1):
+                    print(f"      {i}. {step}")
+            else:
+                print(f"\n   📝 Instruction: {instruction_steps}")
+            
             print(f"\n   🎯 Target: {result.get('target_id', 'N/A')}")
             print(f"   📳 Haptic: {result.get('haptic_cue', 'N/A')}")
             

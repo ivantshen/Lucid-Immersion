@@ -21,7 +21,7 @@ class VRContextState(TypedDict):
     image_analysis: Optional[str]
 
     # Output fields
-    instruction_text: Optional[str]
+    instruction_text: Optional[List[str]]  # List of instruction steps
     target_id: Optional[str]
     haptic_cue: Optional[str]
 
@@ -80,6 +80,11 @@ class VRContextWorkflow:
             import json
             
             # Create context data
+            instruction_text = state.get("instruction_text", [])
+            # Ensure it's always a list
+            if isinstance(instruction_text, str):
+                instruction_text = [instruction_text]
+            
             context_data = {
                 "session_id": state.get("session_id", "unknown"),
                 "timestamp": datetime.utcnow().isoformat(),
@@ -88,11 +93,11 @@ class VRContextWorkflow:
                 "gaze_vector": state.get("gaze_vector", {}),
                 "image_analysis": state.get("image_analysis", ""),
                 "instruction": {
-                    "text": state.get("instruction_text", ""),
+                    "steps": instruction_text,  # Now a list
                     "target_id": state.get("target_id", ""),
                     "haptic_cue": state.get("haptic_cue", "none")
                 },
-                "error": state.get("error", None)  # ADD THIS LINE
+                "error": state.get("error", None)
             }
         
             # Ensure contexts directory exists
@@ -161,17 +166,23 @@ class VRContextWorkflow:
     - What is the user focused on?
     - Any issues or points of confusion?
 
-    Then, provide the next instruction for this task step.
+    Then, provide step-by-step instructions for this task.
 
     Respond in JSON format:
     {{
     "image_analysis": "Brief analysis of the scene (2-3 sentences)",
     "instruction": {{
-        "text": "Clear next instruction (max 2 sentences)",
+        "steps": [
+            "First instruction step",
+            "Second instruction step",
+            "Third instruction step"
+        ],
         "target_id": "component ID if applicable, otherwise empty string",
         "haptic_cue": "guide_to_target | success_pulse | none"
     }}
     }}
+    
+    Provide 2-5 clear, actionable instruction steps.
     Respond ONLY with valid JSON."""
             
             # Create multimodal message
@@ -239,12 +250,21 @@ class VRContextWorkflow:
             # Handle nested instruction object
             instruction = result.get("instruction", {})
             if isinstance(instruction, dict):
-                state["instruction_text"] = instruction.get("text", "No instruction available")
+                # Get steps as a list
+                steps = instruction.get("steps", [])
+                if isinstance(steps, list) and len(steps) > 0:
+                    state["instruction_text"] = steps  # Store as list
+                else:
+                    # Fallback to text field if steps not provided
+                    text = instruction.get("text", "No instruction available")
+                    state["instruction_text"] = [text] if isinstance(text, str) else ["No instruction available"]
+                
                 state["target_id"] = instruction.get("target_id", "")
                 state["haptic_cue"] = instruction.get("haptic_cue", "none")
             else:
                 # Fallback for flat structure
-                state["instruction_text"] = result.get("instruction_text", "No instruction available")
+                text = result.get("instruction_text", "No instruction available")
+                state["instruction_text"] = [text] if isinstance(text, str) else ["No instruction available"]
                 state["target_id"] = result.get("target_id", "")
                 state["haptic_cue"] = result.get("haptic_cue", "none")
             

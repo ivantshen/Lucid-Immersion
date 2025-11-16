@@ -113,11 +113,16 @@ def register_assist_route(app):
                 raise Exception(result['error'])
             
             # 11. Build response
+            instruction_text = result.get('instruction_text', [])
+            # Ensure it's always a list for consistency
+            if isinstance(instruction_text, str):
+                instruction_text = [instruction_text]
+            
             response_data = {
                 'status': 'success',
                 'session_id': session_id,
                 'instruction_id': f"{session_id}-{task_step}",
-                'step_text': result.get('instruction_text', ''),
+                'instruction_steps': instruction_text,  # Now a list of steps
                 'target_id': result.get('target_id', ''),
                 'haptic_cue': result.get('haptic_cue', 'none')
             }
