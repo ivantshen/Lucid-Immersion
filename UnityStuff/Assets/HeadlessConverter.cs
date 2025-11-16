@@ -7,6 +7,7 @@ using System.Collections;
 using UnityEngine.Networking;
 using Meta.XR;
 using TMPro;
+using Oculus.VR;
 
 // This script now assumes you have an OVRPermissionsRequester
 // component somewhere in your scene to handle the permission pop-up.
@@ -344,12 +345,12 @@ public class HeadlessConverter : MonoBehaviour
         {
             // Set Authorization header BEFORE sending
             www.SetRequestHeader("Authorization", "Bearer " + apiKey);
-            
+
             // Log what we're sending for debugging
             Log($"Sending audio question to /ask endpoint for session: {lastSessionId}");
             Log($"Audio size: {audioData.Length} bytes");
             Log($"Content-Type: {www.GetRequestHeader("Content-Type")}");
-            
+
             yield return www.SendWebRequest();
 
             isRequestPending = false;
