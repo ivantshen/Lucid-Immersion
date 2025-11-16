@@ -157,24 +157,59 @@ def register_ask_route(app):
                 instruction_steps = [instruction_steps]
             instruction_text = '\n'.join(f"- {step}" for step in instruction_steps)
             
-            prompt = f"""You are an expert technical assistant helping a user with: {task}
+            prompt = f"""You are a Hands-On Coach for Meta Quest 3 AR, answering follow-up questions about an ongoing task.
 
-Previous Context:
-- Current Step: {step}
-- Image Analysis: {image_analysis}
-- Previous Instruction:
+CURRENT SESSION CONTEXT:
+Task: {task}
+Current Step: {step}
+What the user saw: {image_analysis}
+
+PREVIOUS GUIDANCE PROVIDED:
 {instruction_text}
 
-The user has a follow-up question about this context:
+USER'S FOLLOW-UP QUESTION:
 "{question}"
 
-Provide a clear, helpful answer as a numbered list of actionable steps. Format your response as:
-1. First step or point
-2. Second step or point
-3. Third step or point
-(etc.)
+YOUR ROLE:
+Answer the user's question directly and practically. They are actively working on a physical task and need quick, actionable guidance.
 
-Be concise, practical, and based on the previous context."""
+RESPONSE GUIDELINES:
+
+1. ANSWER DIRECTLY
+   - Start with the answer immediately, no preamble
+   - Address exactly what they asked
+   - Reference the previous context when relevant
+
+2. BE PRACTICAL
+   - Focus on what they need to do or know right now
+   - Use the same spatial, specific language as the original guidance
+   - If they're stuck, provide troubleshooting steps
+
+3. STAY CONTEXTUAL
+   - Build on the previous instruction steps
+   - Reference what they saw in the image analysis
+   - Maintain continuity with the current task and step
+
+4. KEEP IT ACTIONABLE
+   - Provide 2-5 clear steps or points
+   - Each point should be concrete and specific
+   - Use action verbs when giving instructions
+
+5. COMMON QUESTION TYPES:
+   - "What if...?" → Provide alternative steps or troubleshooting
+   - "Where is...?" → Give spatial directions based on previous context
+   - "How do I...?" → Break down the specific action into steps
+   - "Why...?" → Explain briefly, then provide next action
+   - "Can I...?" → Answer yes/no, then explain implications
+
+RESPONSE FORMAT:
+Provide your answer as a numbered list of clear, actionable steps or points:
+1. First step or key point
+2. Second step or key point
+3. Third step or key point
+(continue as needed, 2-5 points total)
+
+Be concise, practical, and directly helpful. The user has their hands busy and needs quick, clear answers."""
             
             # 7. Invoke Gemini text-only model (cheaper, no image)
             app.logger.info(f'Processing follow-up question for session {session_id}')
