@@ -89,6 +89,20 @@ def register_ask_route(app):
                     audio_bytes = audio_file.read()
                     audio_file.seek(0)
                     
+                    # Save audio file for debugging
+                    try:
+                        import os
+                        from datetime import datetime
+                        debug_dir = 'test_images'
+                        os.makedirs(debug_dir, exist_ok=True)
+                        timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+                        debug_filename = f"{debug_dir}/audio_{session_id}_{timestamp}.wav"
+                        with open(debug_filename, 'wb') as f:
+                            f.write(audio_bytes)
+                        app.logger.info(f'Saved audio file to {debug_filename}')
+                    except Exception as e:
+                        app.logger.warning(f'Failed to save debug audio: {e}')
+                    
                     # Transcribe audio to text
                     app.logger.info(f'Transcribing audio for session {session_id}')
                     success, transcribed_text, error_msg = transcribe_audio(
