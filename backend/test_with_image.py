@@ -77,40 +77,65 @@ def test_with_image(image_path: str):
                 headers=headers,
                 timeout=30
             )
-        
-        # Print response
-        print(f"\n📥 Response:")
-        print(f"   Status Code: {response.status_code}")
-        
-        if response.status_code == 200:
-            print(f"   ✅ Success!")
-            result = response.json()
-            
-            print(f"\n📋 Result:")
-            print(f"   Session ID: {result.get('session_id', 'N/A')}")
-            print(f"   Instruction ID: {result.get('instruction_id', 'N/A')}")
-            print(f"\n   📝 Instruction:")
-            print(f"   {result.get('step_text', 'N/A')}")
-            print(f"\n   🎯 Target: {result.get('target_id', 'N/A')}")
-            print(f"   📳 Haptic: {result.get('haptic_cue', 'N/A')}")
-            
-            # Pretty print full response
-            print(f"\n📄 Full Response JSON:")
-            print(json.dumps(result, indent=2))
-            
-            # Check if context was saved
-            context_file = f"contexts/{result.get('session_id')}.json"
-            if os.path.exists(context_file):
-                print(f"\n💾 Context saved to: {context_file}")
-            
-        else:
-            print(f"   ❌ Error!")
-            try:
-                error_data = response.json()
-                print(f"\n   Error Details:")
-                print(json.dumps(error_data, indent=2))
-            except:
-                print(f"\n   Response Text: {response.text}")
+
+            # Print response
+            print(f"\n📥 Response:")
+            print(f"   Status Code: {response.status_code}")
+
+            if response.status_code == 200:
+                result = response.json()
+                
+                # Check status field
+                status = result.get('status', 'unknown')
+                if status == 'success':
+                    print(f"   ✅ Success!")
+                else:
+                    print(f"   ⚠️  Status: {status}")
+                
+                print(f"\n📋 Result:")
+                print(f"   Session ID: {result.get('session_id', 'N/A')}")
+                print(f"   Instruction ID: {result.get('instruction_id', 'N/A')}")
+                print(f"   Task: {result.get('task', 'N/A')}")
+                print(f"   Step: {result.get('step', 'N/A')}")
+                
+                # Show image analysis if present
+                image_analysis = result.get('image_analysis', '')
+                if image_analysis:
+                    print(f"\n   🔍 Image Analysis:")
+                    # Truncate if too long
+                    analysis_preview = image_analysis[:200] + "..." if len(image_analysis) > 200 else image_analysis
+                    print(f"   {analysis_preview}")
+                
+                print(f"\n   📝 Instruction:")
+                print(f"   {result.get('step_text', 'N/A')}")
+                
+                print(f"\n   🎯 Target: {result.get('target_id', 'N/A')}")
+                print(f"   📳 Haptic: {result.get('haptic_cue', 'N/A')}")
+                
+                # Show error if present
+                error = result.get('error')
+                if error:
+                    print(f"\n   ❌ Error: {error}")
+                
+                # Pretty print full response
+                print(f"\n📄 Full Response JSON:")
+                print(json.dumps(result, indent=2))
+                
+                # Check if context was saved
+                context_file = f"contexts/{result.get('session_id')}.json"
+                if os.path.exists(context_file):
+                    print(f"\n💾 Context saved to: {context_file}")
+                    
+                    # Optionally show context file contents
+                    with open(context_file, 'r') as f:
+                        context_data = json.load(f)
+                        print(f"   Timestamp: {context_data.get('timestamp', 'N/A')}")
+                else:
+                    print(f"\n⚠️  Context file not found: {context_file}")
+                    
+            else:
+                print(f"   ❌ Error!")
+                print(f"   Response: {response.text}")
         
     except requests.exceptions.ConnectionError:
         print(f"\n❌ Connection Error!")
