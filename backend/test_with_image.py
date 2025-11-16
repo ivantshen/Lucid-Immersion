@@ -11,7 +11,7 @@ from pathlib import Path
 # Configuration
 API_URL = "http://localhost:8080/assist"
 API_KEY = os.getenv("API_KEY", "my-super-secret-key-12345")  # From .env
-IMAGE_PATH = "test_images/ITB5.jpg"  # Update extension if needed (.png, .jpeg, etc.)
+IMAGE_PATH = "test_images/ITB4.jpg"  # Update extension if needed (.png, .jpeg, etc.)
 
 #Test data for Japanese homework scenario
 # TEST_DATA = {
@@ -35,19 +35,19 @@ IMAGE_PATH = "test_images/ITB5.jpg"  # Update extension if needed (.png, .jpeg, 
 #     "session_id": "restaurant-burger"
 # }
 
-# TEST_DATA = {
-#     "task_step": "1",
-#     "current_task": "Camera",
-#     "gaze_vector": json.dumps({"x": 0.0, "y": 0.0, "z": 1.0}),
-#     "session_id": "camera-setup"
-# }
-
 TEST_DATA = {
     "task_step": "1",
-    "current_task": "Man Using Meta Quest 3",
+    "current_task": "Camera",
     "gaze_vector": json.dumps({"x": 0.0, "y": 0.0, "z": 1.0}),
-    "session_id": "meta-quest-3-analysis"
+    "session_id": "camera-setup"
 }
+
+# TEST_DATA = {
+#     "task_step": "1",
+#     "current_task": "Man Using Meta Quest 3",
+#     "gaze_vector": json.dumps({"x": 0.0, "y": 0.0, "z": 1.0}),
+#     "session_id": "meta-quest-3-analysis"
+# }
 
 
 def test_ask_followup(session_id: str, question: str):
