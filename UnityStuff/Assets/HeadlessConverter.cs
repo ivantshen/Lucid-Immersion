@@ -472,80 +472,81 @@ public class HeadlessConverter : MonoBehaviour
         }
     }
 
-/// <summary>
-/// Display the response from /ask endpoint (voice question)
-/// Header: Transcribed Question
-/// Subheader: Task context
-/// Content: Answer steps as a list
-/// </summary>
-void DisplayAskResponse(AskResponse response)
-{
-    // Header: Show the transcribed question
-    if (headerText != null)
+    /// <summary>
+    /// Display the response from /ask endpoint (voice question)
+    /// Header: Transcribed Question
+    /// Subheader: Task context
+    /// Content: Answer steps as a list
+    /// </summary>
+    void DisplayAskResponse(AskResponse response)
     {
-        string questionText = response.transcribed_question ?? "Voice Question";
-        headerText.text = $"Q: {questionText}";
-    }
-
-    // Subheader: Show task context
-    if (subheaderText != null)
-    {
-        string contextInfo = $"Task: {response.context.task} | Step: {response.context.step}";
-        subheaderText.text = contextInfo;
-    }
-
-    // Main Content: Answer steps as a numbered list
-    if (instructionText != null)
-    {
-        StringBuilder sb = new StringBuilder();
-        sb.AppendLine("Answer:");
-        sb.AppendLine();
-
-        for (int i = 0; i < response.answer_steps.Length; i++)
+        // Header: Show the transcribed question
+        if (headerText != null)
         {
-            sb.AppendLine($"{i + 1}. {response.answer_steps[i]}");
-            if (i < response.answer_steps.Length - 1)
-            {
-                sb.AppendLine();
-            }
+            string questionText = response.transcribed_question ?? "Voice Question";
+            headerText.text = $"Q: {questionText}";
         }
 
-        instructionText.text = sb.ToString();
+        // Subheader: Show task context
+        if (subheaderText != null)
+        {
+            string contextInfo = $"Task: {response.context.task} | Step: {response.context.step}";
+            subheaderText.text = contextInfo;
+        }
+
+        // Main Content: Answer steps as a numbered list
+        if (instructionText != null)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine("Answer:");
+            sb.AppendLine();
+
+            for (int i = 0; i < response.answer_steps.Length; i++)
+            {
+                sb.AppendLine($"{i + 1}. {response.answer_steps[i]}");
+                if (i < response.answer_steps.Length - 1)
+                {
+                    sb.AppendLine();
+                }
+            }
+
+            instructionText.text = sb.ToString();
+        }
+
+        Log("Voice question response displayed successfully");
     }
 
-    Log("Voice question response displayed successfully");
-}
 
+    // Response data structure for parsing JSON response from /assist endpoint
+    [System.Serializable]
+    public class AssistResponse
+    {
+        public string status;
+        public string session_id;
+        public string instruction_id;
+        public string[] instruction_steps;
+        public string target_id;
+        public string haptic_cue;
+        public string image_analysis;
+        public string timestamp;
+    }
 
-// Response data structure for parsing JSON response from /assist endpoint
-[System.Serializable]
-public class AssistResponse
-{
-    public string status;
-    public string session_id;
-    public string instruction_id;
-    public string[] instruction_steps;
-    public string target_id;
-    public string haptic_cue;
-    public string image_analysis;
-    public string timestamp;
-}
+    // Response data structure for parsing JSON response from /ask endpoint
+    [System.Serializable]
+    public class AskResponse
+    {
+        public string status;
+        public string session_id;
+        public string[] answer_steps;
+        public string transcribed_question;
+        public AskContext context;
+    }
 
-// Response data structure for parsing JSON response from /ask endpoint
-[System.Serializable]
-public class AskResponse
-{
-    public string status;
-    public string session_id;
-    public string[] answer_steps;
-    public string transcribed_question;
-    public AskContext context;
-}
-
-[System.Serializable]
-public class AskContext
-{
-    public string task;
-    public string step;
-    public string previous_instruction;
+    [System.Serializable]
+    public class AskContext
+    {
+        public string task;
+        public string step;
+        public string previous_instruction;
+    }
 }
