@@ -235,9 +235,18 @@ class VRContextWorkflow:
             valid_cues = ["guide_to_target", "success_pulse", "none"]
             
             state["image_analysis"] = result.get("image_analysis", "No analysis available")
-            state["instruction_text"] = result.get("instruction_text", "No instruction available")
-            state["target_id"] = result.get("target_id", "")
-            state["haptic_cue"] = result.get("haptic_cue", "none")
+            
+            # Handle nested instruction object
+            instruction = result.get("instruction", {})
+            if isinstance(instruction, dict):
+                state["instruction_text"] = instruction.get("text", "No instruction available")
+                state["target_id"] = instruction.get("target_id", "")
+                state["haptic_cue"] = instruction.get("haptic_cue", "none")
+            else:
+                # Fallback for flat structure
+                state["instruction_text"] = result.get("instruction_text", "No instruction available")
+                state["target_id"] = result.get("target_id", "")
+                state["haptic_cue"] = result.get("haptic_cue", "none")
             
             if state["haptic_cue"] not in valid_cues:
                 state["haptic_cue"] = "none"

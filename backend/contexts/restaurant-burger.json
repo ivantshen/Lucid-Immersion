@@ -1,0 +1,18 @@
+{
+  "session_id": "restaurant-burger",
+  "timestamp": "2025-11-16T01:27:58.135012",
+  "task": "Burger",
+  "step": "1",
+  "gaze_vector": {
+    "x": 0.0,
+    "y": 0.0,
+    "z": 1.0
+  },
+  "image_analysis": "The user's view shows an open-faced burger with melted cheese, bacon, lettuce, tomato, and red onion. Ketchup, mustard, a pickle, and a side salad are also visible on the plate. The user appears to be focused on the main burger components.",
+  "instruction": {
+    "text": "Begin by adding your desired condiments, such as ketchup or mustard, to the burger.",
+    "target_id": "",
+    "haptic_cue": "guide_to_target"
+  },
+  "error": null
+}

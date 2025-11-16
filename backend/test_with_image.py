@@ -11,14 +11,14 @@ from pathlib import Path
 # Configuration
 API_URL = "http://localhost:8080/assist"
 API_KEY = os.getenv("API_KEY", "my-super-secret-key-12345")  # From .env
-IMAGE_PATH = "test_images/ITB2.jpg"  # Update extension if needed (.png, .jpeg, etc.)
+IMAGE_PATH = "test_images/ITB3.jpg"  # Update extension if needed (.png, .jpeg, etc.)
 
 # Test data for Japanese homework scenario
 TEST_DATA = {
     "task_step": "1",
-    "current_task": "Gym Biceps Curl",
+    "current_task": "Burger",
     "gaze_vector": json.dumps({"x": 0.0, "y": 0.0, "z": 1.0}),
-    "session_id": "test-gym-biceps-session"
+    "session_id": "restaurant-burger"
 }
 
 
