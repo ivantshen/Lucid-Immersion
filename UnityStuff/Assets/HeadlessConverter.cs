@@ -19,14 +19,37 @@ public class HeadlessConverter : MonoBehaviour
     [Header("Networking")]
     [Tooltip("The full URL of your Flask endpoint")]
     public string flaskEndpointUrl = "http://YOUR_SERVER_IP:5000/assist";
+    
+    [Tooltip("Your API key for authentication")]
+    public string apiKey = "YOUR_API_KEY_HERE";
+
+    [Header("Task Context")]
+    [Tooltip("Current task identifier (e.g., PSU_Install)")]
+    public string currentTask = "PSU_Install";
+    
+    [Tooltip("Current step number")]
+    public string taskStep = "1";
+    
+    [Header("Gaze Tracking (Optional)")]
+    [Tooltip("Enable to send gaze vector data")]
+    public bool sendGazeData = false;
+    
+    [Tooltip("Reference to OVR Camera Rig for gaze tracking")]
+    public Transform centerEyeAnchor;
 
     [Header("Optional Debugging")]
     [Tooltip("Optional: A text element for status updates")]
     public TMP_Text debugStatusText;
 
     private bool isRequestPending = false;
+    private string sessionId = "";
 
-    // --- We no longer need the ImagePayload class ---
+    void Start()
+    {
+        // Generate a session ID when the app starts
+        sessionId = System.Guid.NewGuid().ToString();
+        Log($"Session ID: {sessionId}");
+    }
 
     /// <summary>
     /// Call this from your button's OnClick event.
@@ -62,7 +85,7 @@ public class HeadlessConverter : MonoBehaviour
 
         Log("Got texture. Encoding to JPG...");
 
-        // --- 3. Encode the Texture2D Directly to JPG ---
+        // Encode the Texture2D to JPG
         byte[] jpgData = sourceTexture.EncodeToJPG(90); // 90% quality
 
         if (jpgData == null)
@@ -73,30 +96,42 @@ public class HeadlessConverter : MonoBehaviour
 
         Log("Encoding complete. Starting upload coroutine...");
 
-        // --- 4. Start the Asynchronous Upload with the raw JPG bytes ---
-        StartCoroutine(UploadJPG(jpgData));
+        // Start the upload with multipart/form-data
+        StartCoroutine(UploadMultipartFormData(jpgData));
     }
 
     /// <summary>
-    /// This Coroutine sends the raw JPG byte array
-    /// to the Flask server without blocking the main game thread.
+    /// This Coroutine sends the image and metadata as multipart/form-data
+    /// to the Flask server, matching the backend API requirements.
     /// </summary>
-    IEnumerator UploadJPG(byte[] jpgData)
+    IEnumerator UploadMultipartFormData(byte[] jpgData)
     {
         isRequestPending = true;
 
-        // --- MODIFIED SECTION ---
-        // We don't create JSON. We send the raw bytes directly.
-        using (UnityWebRequest www = new UnityWebRequest(flaskEndpointUrl, "POST"))
-        {
-            // Set the upload handler to our raw JPG data
-            www.uploadHandler = new UploadHandlerRaw(jpgData);
-            www.downloadHandler = new DownloadHandlerBuffer();
+        // Create multipart form data
+        WWWForm form = new WWWForm();
+        
+        // Add the image file
+        form.AddBinaryData("snapshot", jpgData, "snapshot.jpg", "image/jpeg");
+        
+        // Add task context fields
+        form.AddField("task_step", taskStep);
+        form.AddField("current_task", currentTask);
+        form.AddField("session_id", sessionId);
+        
+        // Add gaze vector data
+        string gazeVectorJson = GetGazeVectorJson();
+        form.AddField("gaze_vector", gazeVectorJson);
 
-            // Set the content type header so Flask knows to expect a JPG
-            www.SetRequestHeader("Content-Type", "image/jpeg");
+        // Create the request
+        using (UnityWebRequest www = UnityWebRequest.Post(flaskEndpointUrl, form))
+        {
+            // Add Authorization header
+            www.SetRequestHeader("Authorization", "Bearer " + apiKey);
 
             Log("Sending data to server...");
+            Log($"Task: {currentTask}, Step: {taskStep}");
+            
             yield return www.SendWebRequest();
 
             isRequestPending = false;
@@ -104,12 +139,47 @@ public class HeadlessConverter : MonoBehaviour
             if (www.result == UnityWebRequest.Result.Success)
             {
                 Log("SUCCESS: Server responded!");
-                Log(www.downloadHandler.text);
+                
+                // Parse the JSON response
+                try
+                {
+                    string responseText = www.downloadHandler.text;
+                    Log("Response: " + responseText);
+                    
+                    // You can parse the JSON here to extract instruction_steps, target_id, haptic_cue
+                    // Example: JsonUtility.FromJson<ResponseData>(responseText);
+                }
+                catch (Exception e)
+                {
+                    Log("Error parsing response: " + e.Message);
+                }
             }
             else
             {
                 Log("ERROR: " + www.error);
+                if (www.downloadHandler != null)
+                {
+                    Log("Error details: " + www.downloadHandler.text);
+                }
             }
+        }
+    }
+
+    /// <summary>
+    /// Get the gaze vector as a JSON string.
+    /// Returns a default vector if gaze tracking is disabled or centerEyeAnchor is not set.
+    /// </summary>
+    string GetGazeVectorJson()
+    {
+        if (sendGazeData && centerEyeAnchor != null)
+        {
+            Vector3 gazeDirection = centerEyeAnchor.forward;
+            return $"{{\"x\": {gazeDirection.x}, \"y\": {gazeDirection.y}, \"z\": {gazeDirection.z}}}";
+        }
+        else
+        {
+            // Return a default forward vector
+            return "{\"x\": 0, \"y\": 0, \"z\": 1}";
         }
     }
 
@@ -122,4 +192,16 @@ public class HeadlessConverter : MonoBehaviour
             debugStatusText.text = message;
         }
     }
+}
+
+// Optional: Response data structure for parsing JSON response
+[System.Serializable]
+public class AssistResponse
+{
+    public string status;
+    public string session_id;
+    public string instruction_id;
+    public string[] instruction_steps;
+    public string target_id;
+    public string haptic_cue;
 }
