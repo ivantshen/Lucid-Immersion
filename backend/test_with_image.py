@@ -11,14 +11,14 @@ from pathlib import Path
 # Configuration
 API_URL = "http://localhost:8080/assist"
 API_KEY = os.getenv("API_KEY", "my-super-secret-key-12345")  # From .env
-IMAGE_PATH = "test_images/ITB1.jpg"  # Update extension if needed (.png, .jpeg, etc.)
+IMAGE_PATH = "test_images/ITB2.jpg"  # Update extension if needed (.png, .jpeg, etc.)
 
 # Test data for Japanese homework scenario
 TEST_DATA = {
     "task_step": "1",
-    "current_task": "Japanese_Homework",
+    "current_task": "Gym Biceps Curl",
     "gaze_vector": json.dumps({"x": 0.0, "y": 0.0, "z": 1.0}),
-    "session_id": "test-japanese-homework-session"
+    "session_id": "test-gym-biceps-session"
 }
 
 
@@ -66,7 +66,7 @@ def test_with_image(image_path: str):
     try:
         # Open and send image
         with open(image_path, 'rb') as img_file:
-            files = {'snapshot': (os.path.basename(image_path), img_file, f'image/{file_ext[1:]}')}
+            files = {'snapshot': (os.path.basename(image_path), img_file, f'image/jpeg')}
             headers = {'Authorization': f'Bearer {API_KEY}'}
             
             print(f"\n⏳ Processing...")

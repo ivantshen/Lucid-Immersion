@@ -1,0 +1,17 @@
+{
+  "session_id": "test-gym-biceps-session",
+  "timestamp": "2025-11-16T00:34:21.899659",
+  "task": "Gym Biceps Curl",
+  "step": "1",
+  "gaze_vector": {
+    "x": 0.0,
+    "y": 0.0,
+    "z": 1.0
+  },
+  "image_analysis": "",
+  "instruction": {
+    "text": "```json\n{\n  \"instruction_text\": \"Stand tall with your feet shoulder-width apart. Pick up a dumbbell in each hand, letting them hang at your sides with palms facing forward.\",\n  \"target_id\": \"\",\n  \"hap",
+    "target_id": "",
+    "haptic_cue": "none"
+  }
+}
